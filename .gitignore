@@ -1,0 +1,9 @@
+node_modules/
+.next/
+.turbo/
+dist/
+*.local
+
+# OS
+.DS_Store
+Thumbs.db
