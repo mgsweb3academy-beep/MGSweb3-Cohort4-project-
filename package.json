@@ -1,0 +1,8 @@
+{
+  "name": "corridor",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
+}

@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Corridor — a cohort LMS where the work lives in git</title>
+<meta name="description" content="Corridor runs cohort programs where the work lives in git. Learners team up on tasks, push to a branch, and review each other. A manager watches every task and tells you who is stuck before they say so.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --ink:    #10141c;
+    --ink-2:  #161c27;
+    --ink-3:  #1e2635;
+    --line:   #2a3346;
+    --chalk:  #ece9e2;
+    --dim:    #8b93a3;
+    --signal: #7fd1c1;
+    --mark:   #e8a54b;
+
+    --display: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif;
+    --body:    'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+    --mono:    'IBM Plex Mono', ui-monospace, monospace;
+
+    --pad: clamp(1.25rem, 4vw, 3rem);
+    --maxw: 1120px;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0; background: var(--ink); color: var(--chalk);
+    font-family: var(--body); font-size: 16px; line-height: 1.6;
+    -webkit-font-smoothing: antialiased; overflow-x: hidden;
+  }
+
+  body::before {
+    content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background:
+      radial-gradient(60rem 40rem at 15% -10%, rgba(127,209,193,.10), transparent 60%),
+      radial-gradient(45rem 35rem at 85% 0%, rgba(232,165,75,.06), transparent 65%);
+  }
+
+  .wrap { position: relative; z-index: 1; max-width: var(--maxw); margin: 0 auto; padding-inline: var(--pad); }
+  a { color: inherit; text-decoration: none; }
+  :focus-visible { outline: 2px solid var(--signal); outline-offset: 3px; border-radius: 4px; }
+  .mono { font-family: var(--mono); font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); }
+
+  .rise { opacity: 0; filter: blur(10px); transform: translateY(14px); animation: rise .9s cubic-bezier(.16,1,.3,1) forwards; animation-delay: var(--d, 0s); }
+  @keyframes rise { to { opacity: 1; filter: blur(0); transform: none; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+    .rise { opacity: 1; filter: none; transform: none; }
+    html { scroll-behavior: auto; }
+  }
+
+  /* nav */
+  header { position: fixed; top: 0; left: 0; right: 0; z-index: 40; padding: .6rem var(--pad); }
+  .bar {
+    max-width: var(--maxw); margin: 0 auto; display: flex; align-items: center; gap: 2rem;
+    padding: .7rem 1rem; border: 1px solid transparent; border-radius: 14px;
+    transition: max-width .35s ease, background .35s ease, border-color .35s ease;
+  }
+  header.stuck .bar { max-width: 860px; background: rgba(22,28,39,.72); border-color: var(--line); backdrop-filter: blur(14px); }
+  .brand { display: flex; align-items: center; gap: .6rem; font-family: var(--display); font-weight: 600; letter-spacing: -.01em; }
+  .nav-links { display: none; gap: 1.6rem; margin-left: auto; font-size: .9rem; color: var(--dim); }
+  .nav-links a:hover { color: var(--chalk); }
+  .nav-cta { margin-left: auto; display: flex; gap: .5rem; align-items: center; }
+  @media (min-width: 900px) { .nav-links { display: flex; } .nav-cta { margin-left: 0; } }
+
+  /* buttons */
+  .btn {
+    display: inline-flex; align-items: center; gap: .5rem;
+    font-family: var(--body); font-size: .92rem; font-weight: 500;
+    padding: .62rem 1.05rem; border-radius: 10px; border: 1px solid var(--line);
+    color: var(--chalk); background: transparent; cursor: pointer;
+    transition: background .2s ease, border-color .2s ease, transform .2s ease;
+  }
+  .btn:hover { background: var(--ink-3); border-color: #3a465e; }
+  .btn-solid { background: var(--chalk); color: var(--ink); border-color: var(--chalk); font-weight: 600; }
+  .btn-solid:hover { background: #fff; border-color: #fff; transform: translateY(-1px); }
+  .btn-lg { padding: .85rem 1.4rem; font-size: 1rem; }
+
+  /* hero */
+  .hero { padding-top: clamp(7rem, 16vh, 11rem); padding-bottom: 4rem; text-align: center; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: .65rem; padding: .35rem .85rem;
+    border: 1px solid var(--line); border-radius: 999px; background: var(--ink-2);
+    font-family: var(--mono); font-size: .72rem; letter-spacing: .08em; color: var(--dim);
+  }
+  .eyebrow b { color: var(--chalk); font-weight: 500; }
+  .pulse { width: 6px; height: 6px; border-radius: 50%; background: var(--signal); box-shadow: 0 0 0 0 rgba(127,209,193,.6); animation: pulse 2.6s infinite; flex: none; }
+  @keyframes pulse { 70% { box-shadow: 0 0 0 8px rgba(127,209,193,0); } 100% { box-shadow: 0 0 0 0 rgba(127,209,193,0); } }
+
+  h1 {
+    font-family: var(--display); font-weight: 800;
+    font-size: clamp(2.5rem, 7vw, 4.6rem); line-height: .98; letter-spacing: -.035em;
+    margin: 1.8rem auto .9rem; max-width: 16ch; text-wrap: balance;
+  }
+  h1 .hl { position: relative; white-space: nowrap; }
+  h1 .hl::after {
+    content: ''; position: absolute; left: -.06em; right: -.06em; bottom: .05em; height: .16em;
+    background: var(--mark); opacity: .85; z-index: -1;
+    transform: scaleX(0); transform-origin: left; animation: swipe .7s cubic-bezier(.16,1,.3,1) 1.2s forwards;
+  }
+  @keyframes swipe { to { transform: scaleX(1); } }
+
+  .lede { max-width: 50ch; margin: 0 auto; color: var(--dim); font-size: clamp(1rem, 2vw, 1.12rem); text-wrap: balance; }
+  .hero-cta { display: flex; flex-wrap: wrap; gap: .7rem; justify-content: center; margin-top: 2rem; }
+
+  /* signature panel */
+  .panel {
+    margin-top: 4rem; background: linear-gradient(180deg, var(--ink-2), #131924);
+    border: 1px solid var(--line); border-radius: 18px; padding: clamp(1rem, 3vw, 1.6rem);
+    text-align: left; box-shadow: 0 40px 80px -40px rgba(0,0,0,.8);
+  }
+  .panel-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: .75rem; padding-bottom: 1.2rem; border-bottom: 1px solid var(--line); }
+  .panel-head h2 { font-family: var(--display); font-size: 1.05rem; font-weight: 600; margin: 0; letter-spacing: -.01em; }
+  .status { margin-left: auto; font-family: var(--mono); font-size: .72rem; letter-spacing: .1em; color: var(--mark); }
+
+  .matrix { display: grid; grid-template-columns: 68px repeat(8, minmax(0,1fr)) 42px; gap: 4px; align-items: center; margin-top: 1.3rem; }
+  @media (min-width: 700px) { .matrix { grid-template-columns: 108px repeat(8, minmax(0,1fr)) 54px; gap: 5px; } }
+  .m-name { font-size: .78rem; color: #b9c0cc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .m-head { font-family: var(--mono); font-size: .58rem; letter-spacing: .06em; color: #5c6577; text-align: center; }
+  .m-head.now { color: var(--mark); }
+  .m-count { font-family: var(--mono); font-size: .68rem; color: var(--dim); text-align: right; }
+  .cell { height: 17px; border-radius: 3px; background: var(--ink-3); opacity: 0; animation: pop .3s ease forwards; animation-delay: var(--dd); }
+  .cell.l1 { background: rgba(127,209,193,.22); }
+  .cell.l2 { background: rgba(127,209,193,.45); }
+  .cell.l3 { background: rgba(127,209,193,.78); }
+  .cell.future { background: transparent; box-shadow: inset 0 0 0 1px var(--line); }
+  .cell.nowcol { box-shadow: inset 0 0 0 1px var(--mark); }
+  @keyframes pop { to { opacity: 1; } }
+
+  .m-more { grid-column: 1 / -1; font-family: var(--mono); font-size: .68rem; color: #5c6577; padding-top: .4rem; }
+
+  .manager {
+    display: flex; align-items: flex-start; gap: .7rem; flex-wrap: wrap;
+    margin-top: 1.4rem; padding-top: 1.2rem; border-top: 1px solid var(--line);
+  }
+  .manager .pulse { margin-top: .45rem; }
+  .manager .who { font-family: var(--mono); font-size: .68rem; letter-spacing: .12em; text-transform: uppercase; color: var(--signal); margin-top: .2rem; }
+  .manager p { margin: 0; font-size: .88rem; color: var(--dim); flex: 1 1 240px; }
+  .manager p b { color: var(--chalk); font-weight: 500; }
+  .manager .t { font-family: var(--mono); font-size: .68rem; color: #5c6577; }
+
+  /* task flow */
+  .flow { padding: 5.5rem 0 1rem; }
+  .flow-steps { display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; margin-top: 1.6rem; }
+  @media (min-width: 800px) { .flow-steps { grid-template-columns: repeat(5, 1fr); } }
+  .step { background: var(--ink-2); padding: 1.1rem 1rem; display: flex; flex-direction: column; gap: .3rem; }
+  .step .n { font-family: var(--mono); font-size: .64rem; letter-spacing: .12em; color: #5c6577; }
+  .step h3 { font-family: var(--display); font-size: .98rem; font-weight: 600; margin: 0; letter-spacing: -.01em; }
+  .step p { margin: 0; font-size: .82rem; color: var(--dim); }
+  .step.auto h3::after { content: '·  managed'; font-family: var(--mono); font-size: .58rem; letter-spacing: .1em; color: var(--signal); margin-left: .5rem; text-transform: uppercase; font-weight: 400; }
+
+  /* cards */
+  .views { padding: 5.5rem 0 2rem; }
+  .views-head { max-width: 36ch; }
+  .views-head h2 { font-family: var(--display); font-size: clamp(1.8rem, 4vw, 2.6rem); font-weight: 800; letter-spacing: -.03em; line-height: 1.05; margin: .6rem 0 0; }
+  .cards { display: grid; gap: 1rem; margin-top: 2.5rem; }
+  @media (min-width: 860px) { .cards { grid-template-columns: repeat(3, 1fr); } }
+  .card { background: var(--ink-2); border: 1px solid var(--line); border-radius: 14px; padding: 1.3rem; display: flex; flex-direction: column; }
+  .card h3 { font-family: var(--display); font-size: 1.1rem; font-weight: 600; margin: .35rem 0 .4rem; letter-spacing: -.01em; }
+  .card p.d { margin: 0; color: var(--dim); font-size: .9rem; }
+  .frag { margin-top: 1rem; border-top: 1px solid var(--line); padding-top: .9rem; display: grid; gap: .55rem; font-size: .85rem; }
+  .row { display: flex; align-items: center; gap: .6rem; }
+  .row .lbl { color: #b9c0cc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row .val { margin-left: auto; font-family: var(--mono); font-size: .7rem; color: var(--dim); white-space: nowrap; }
+  .row .val.warn { color: var(--mark); }
+  .tick { width: 14px; height: 14px; border-radius: 4px; border: 1px solid var(--line); flex: none; }
+  .tick.done { background: var(--signal); border-color: var(--signal); }
+  .tick.late { border-color: var(--mark); }
+  .split { display: flex; height: 6px; border-radius: 3px; overflow: hidden; background: var(--ink-3); margin-top: .2rem; }
+  .split i { display: block; height: 100%; }
+
+  /* closing */
+  .close { padding: 6rem 0 4rem; text-align: center; }
+  .close h2 { font-family: var(--display); font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 800; letter-spacing: -.03em; margin: 0 auto .8rem; max-width: 18ch; line-height: 1.02; text-wrap: balance; }
+  .close p { color: var(--dim); max-width: 44ch; margin: 0 auto 2rem; }
+
+  footer { border-top: 1px solid var(--line); padding: 2rem 0 3rem; }
+  .foot { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; font-size: .85rem; color: var(--dim); }
+  .foot nav { display: flex; gap: 1.2rem; margin-left: auto; }
+  .foot nav a:hover { color: var(--chalk); }
+</style>
+</head>
+<body>
+
+<header id="hdr">
+  <div class="bar">
+    <a class="brand" href="#top" aria-label="Corridor, home">
+      <svg width="20" height="18" viewBox="0 0 20 18" fill="none" aria-hidden="true">
+        <rect x="0" y="6" width="3" height="12" rx="1" fill="#7fd1c1"/>
+        <rect x="5" y="4" width="3" height="14" rx="1" fill="#7fd1c1"/>
+        <rect x="10" y="0" width="3" height="18" rx="1" fill="#e8a54b"/>
+        <rect x="15" y="8" width="3" height="10" rx="1" fill="#2a3346"/>
+      </svg>
+      Corridor
+    </a>
+    <nav class="nav-links">
+      <a href="#flow">How a task moves</a>
+      <a href="#views">The screens</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#docs">Docs</a>
+    </nav>
+    <div class="nav-cta">
+      <a class="btn" href="#signin">Sign in</a>
+      <a class="btn btn-solid" href="#demo">Start a cohort</a>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+  <section class="wrap hero">
+    <div class="eyebrow rise" style="--d:.05s">
+      <span class="pulse" aria-hidden="true"></span>
+      <span><b>312 pushes</b> across 41 learners this week</span>
+    </div>
+
+    <h1 class="rise" style="--d:.15s">Turning it in is <span class="hl">a push</span>.</h1>
+
+    <p class="lede rise" style="--d:.28s">
+      Corridor runs cohort programs where the work lives in git. Learners team up on tasks,
+      push to a branch, and review each other. A manager watches every task and tells you
+      who is stuck before they say so.
+    </p>
+
+    <div class="hero-cta rise" style="--d:.4s">
+      <a class="btn btn-solid btn-lg" href="#demo">Start a cohort</a>
+      <a class="btn btn-lg" href="#flow">See how a task moves</a>
+    </div>
+
+    <div class="panel rise" style="--d:.55s" id="cohort">
+      <div class="panel-head">
+        <h2>Backend Engineering — Cohort 07</h2>
+        <span class="mono">41 learners · 9 teams</span>
+        <span class="status">Week 5 of 8</span>
+      </div>
+
+      <div class="matrix" id="matrix" role="img"
+           aria-label="Commit activity by learner across eight weeks. Weeks one to four complete, week five in progress, weeks six to eight upcoming."></div>
+
+      <div class="manager">
+        <span class="pulse" aria-hidden="true"></span>
+        <div>
+          <div class="who">Manager</div>
+        </div>
+        <p>
+          Reopened <b>3 tasks</b> that were merged without a review. Moved <b>Auth service</b>
+          into review. Flagged <b>Team 4</b> — one member wrote 82% of the commits.
+        </p>
+        <span class="t">06:12</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="wrap flow" id="flow">
+    <p class="mono">How a task moves</p>
+    <div class="flow-steps">
+      <div class="step auto">
+        <span class="n">01</span>
+        <h3>Assigned</h3>
+        <p>The manager splits the brief into tasks and hands each one to a team.</p>
+      </div>
+      <div class="step">
+        <span class="n">02</span>
+        <h3>Branched</h3>
+        <p>A branch opens with the task. Everything after this happens in the repo.</p>
+      </div>
+      <div class="step auto">
+        <span class="n">03</span>
+        <h3>Pushed</h3>
+        <p>Commits land against the task. Every learner's share is counted as it goes.</p>
+      </div>
+      <div class="step">
+        <span class="n">04</span>
+        <h3>Reviewed</h3>
+        <p>Two teammates read it first. You only see what survives that.</p>
+      </div>
+      <div class="step auto">
+        <span class="n">05</span>
+        <h3>Closed</h3>
+        <p>Merged, marked, and written back to the learner's record.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="wrap views" id="views">
+    <div class="views-head">
+      <p class="mono">What you open on Monday</p>
+      <h2>Three screens. The manager keeps them current.</h2>
+    </div>
+
+    <div class="cards">
+      <article class="card">
+        <p class="mono">The board</p>
+        <h3>Every task, and who has it</h3>
+        <p class="d">Tasks move on their own as commits land. Nobody drags a card.</p>
+        <div class="frag">
+          <div class="row"><i class="tick done"></i><span class="lbl">Request lifecycle</span><span class="val">Team 2 · merged</span></div>
+          <div class="row"><i class="tick late"></i><span class="lbl">Auth service</span><span class="val warn">in review · 3d</span></div>
+          <div class="row"><i class="tick"></i><span class="lbl">Rate limiter</span><span class="val">Team 6 · open</span></div>
+          <div class="row"><i class="tick"></i><span class="lbl">Queue worker</span><span class="val">unassigned</span></div>
+        </div>
+      </article>
+
+      <article class="card">
+        <p class="mono">The split</p>
+        <h3>Who actually wrote it</h3>
+        <p class="d">Commit share per team, so one person carrying four is visible in a glance.</p>
+        <div class="frag">
+          <div class="row"><span class="lbl">Team 4</span><span class="val warn">82 / 11 / 5 / 2</span></div>
+          <div class="split"><i style="width:82%;background:#e8a54b"></i><i style="width:11%;background:#7fd1c1"></i><i style="width:5%;background:rgba(127,209,193,.5)"></i><i style="width:2%;background:rgba(127,209,193,.3)"></i></div>
+          <div class="row" style="margin-top:.5rem"><span class="lbl">Team 2</span><span class="val">31 / 27 / 24 / 18</span></div>
+          <div class="split"><i style="width:31%;background:#7fd1c1"></i><i style="width:27%;background:rgba(127,209,193,.8)"></i><i style="width:24%;background:rgba(127,209,193,.6)"></i><i style="width:18%;background:rgba(127,209,193,.4)"></i></div>
+        </div>
+      </article>
+
+      <article class="card">
+        <p class="mono">The queue</p>
+        <h3>Work waiting on you</h3>
+        <p class="d">Peer review clears most of it. What reaches you is what needed a person.</p>
+        <div class="frag">
+          <div class="row"><span class="lbl">Escalated by manager</span><span class="val warn">4</span></div>
+          <div class="row"><span class="lbl">Peer review stalled</span><span class="val">6</span></div>
+          <div class="row"><span class="lbl">Resits</span><span class="val">2</span></div>
+          <div class="row"><span class="lbl">Oldest in queue</span><span class="val">3 days</span></div>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="wrap close" id="demo">
+    <h2>Bring your next intake in.</h2>
+    <p>Set the start date, connect the org on GitHub, invite the roster. A cohort takes about an afternoon to stand up.</p>
+    <div class="hero-cta">
+      <a class="btn btn-solid btn-lg" href="#demo">Start a cohort</a>
+      <a class="btn btn-lg" href="#docs">Read the docs</a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <span>Corridor</span>
+    <nav>
+      <a href="#docs">Docs</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#changelog">Changelog</a>
+      <a href="#contact">Contact</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+  // Sticky nav
+  const hdr = document.getElementById('hdr');
+  const onScroll = () => hdr.classList.toggle('stuck', window.scrollY > 40);
+  onScroll();
+  window.addEventListener('scroll', onScroll, { passive: true });
+
+  // Commit matrix
+  const NOW = 4; // zero-indexed current week
+  const learners = [
+    ['Adaeze O.',  [4, 6, 2, 0, 1]],
+    ['Marcus B.',  [7, 5, 8, 6, 3]],
+    ['Priya N.',   [2, 3, 3, 4, 2]],
+    ['Tobi A.',    [9, 8, 7, 9, 5]],
+    ['Ini E.',     [1, 0, 2, 1, 0]],
+    ['Sam K.',     [5, 6, 4, 5, 4]],
+    ['Zainab M.',  [3, 4, 6, 3, 2]]
+  ];
+
+  const matrix = document.getElementById('matrix');
+  const cellHTML = [];
+
+  // header row
+  cellHTML.push('<div></div>');
+  for (let w = 0; w < 8; w++) {
+    cellHTML.push('<div class="m-head' + (w === NOW ? ' now' : '') + '">' + (w === NOW ? 'now' : 'w' + (w + 1)) + '</div>');
+  }
+  cellHTML.push('<div></div>');
+
+  // learner rows
+  learners.forEach(([name, weeks], r) => {
+    cellHTML.push('<div class="m-name">' + name + '</div>');
+    let total = 0;
+    for (let w = 0; w < 8; w++) {
+      const c = weeks[w];
+      let cls = 'cell';
+      if (c === undefined) {
+        cls += ' future';
+      } else {
+        total += c;
+        if (c >= 6) cls += ' l3';
+        else if (c >= 3) cls += ' l2';
+        else if (c >= 1) cls += ' l1';
+      }
+      if (w === NOW) cls += ' nowcol';
+      const delay = (0.9 + (r * 0.05) + (w * 0.03)).toFixed(2);
+      cellHTML.push('<div class="' + cls + '" style="--dd:' + delay + 's"></div>');
+    }
+    cellHTML.push('<div class="m-count">' + total + '</div>');
+  });
+
+  cellHTML.push('<div class="m-more">+ 34 more learners</div>');
+  matrix.innerHTML = cellHTML.join('');
+</script>
+
+</body>
+</html>
