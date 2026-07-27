@@ -808,6 +808,57 @@ AI features are temporarily down.
 
 ---
 
+### Part 15 — Theme (Light/Dark) & Wallet Connection
+**Owns:** the light/dark theme system layered on Part 1's tokens, the theme toggle + persistence, and wallet connection (connect/disconnect, address display, session linkage).
+**Depends on:** Part 1 (tokens + components), Part 2 (session/identity to link a wallet to a user).
+**Feeds:** every frontend part (theme applies platform-wide); Parts 10/11/12 (wallet shown in profile/settings).
+
+**Scope — in:** a `light | dark | system` theme mode with a toggle, persisted per-user and respecting `prefers-color-scheme` on first load; a light and a dark value for every token in Part 1's token file; wallet connection (connect/disconnect via injected provider + WalletConnect fallback), truncated address + ENS display, linking the wallet to the current user record, and handling account/chain-change events; a no-flash-of-wrong-theme guard on load.
+**Scope — out:** defining the base tokens themselves — that's Part 1; this part adds the dark/light dimension to them. On-chain payments, transactions, or certificate minting — connection only, not transacting (flag if a later part needs it). Auth itself — Part 2 owns sessions; this part links a wallet to an existing session.
+
+**Requirements**
+- Theme extends `packages/ui/tokens` with a light and a dark value for every color/shadow token — no part hardcodes a per-mode hex. The state colors hold in both modes: teal still means *progressing normally*, amber still means *this needs a person*, no third color, and both stay distinguishable at WCAG AA contrast in dark and light.
+- Theme respects `prefers-color-scheme` on first visit, then honors the user's explicit choice, persisted to localStorage **and** the user record so it follows them across devices.
+- `prefers-reduced-motion` is respected on the toggle transition, per Part 1.
+- Wallet connection is **optional and additive** — it never blocks login or gates any core LMS feature; a student with no wallet uses the entire platform. One wallet links to one user; connecting a different wallet asks before replacing the existing link.
+- Handle wallet edge cases explicitly: no provider installed (guide to install / offer WalletConnect), user rejects the connection request, account switched in-wallet (reflect or disconnect), wrong network (surface it, don't crash).
+- The toggle is keyboard-operable and screen-reader-labeled with its current state; theme choice never traps focus.
+
+**Acceptance criteria**
+- [ ] Toggling to dark restyles every screen through tokens alone — no component ships a hardcoded light-only color.
+- [ ] First load with the OS in dark mode renders dark before paint (no white flash); an explicit user choice overrides the OS preference on the next visit.
+- [ ] Teal and amber states remain visually distinct and WCAG AA legible in both modes.
+- [ ] A user can connect a wallet, see their truncated address, disconnect, and the wallet stays linked to their account across sessions.
+- [ ] With no wallet extension present, the connect action degrades gracefully (guidance, not an error), and the rest of the platform stays fully usable.
+
+**Prompt for your build assistant**
+```
+You're building theming and wallet connection for Corridor, a cohort-based LMS for a
+Web3 program, on Next.js + TypeScript + Tailwind, using packages/ui exclusively.
+
+Theme: extend Part 1's token file (packages/ui/tokens) with a light and a dark value for
+every color and shadow token — do not fork the tokens or hardcode a per-mode hex anywhere.
+Build a light | dark | system theme mode with a toggle that respects prefers-color-scheme
+on first load, then honors and persists the user's explicit choice (localStorage plus the
+user record so it follows them across devices). Prevent any flash of the wrong theme on
+load. Keep the design language intact in both modes: teal still means progressing, amber
+still means needs-a-person, no third state color, and both stay WCAG AA legible in dark
+and light. Respect prefers-reduced-motion on the toggle. Make the toggle keyboard-operable
+and screen-reader-labeled with its current state.
+
+Wallet: build connect/disconnect against an injected provider with a WalletConnect
+fallback (wagmi + viem, or the stack the team standardizes on). Show a truncated address
+and ENS name if present, and link the connected wallet to the current user's session —
+Part 2 owns the session, you link a wallet to it, you do not replace auth. Handle the edge
+cases: no provider installed (guide to install / offer WalletConnect), user rejects the
+request, account changed in-wallet, and wrong network — surface each clearly, never crash.
+Wallet connection is optional and additive: a student without a wallet must be able to use
+the entire platform. Follow docs/API.md for linking the wallet to the user; if a field is
+missing, propose it in packages/types rather than forking a local shape.
+```
+
+---
+
 ## 11. Delivery order & definition of done
 
 **Suggested build order** (ownership stays as assigned above — this is sequencing, not reassignment):
