@@ -177,3 +177,37 @@ export interface AuditLogEntry {
   timestamp: string;
   detail?: string;
 }
+
+export type LessonContentType = 'video' | 'pdf' | 'markdown' | 'audio' | 'code';
+
+export interface Lesson {
+  id: string;
+  courseId: string;
+  title: string;
+  contentType: LessonContentType;
+  contentUrl?: string; // For video, pdf, audio
+  textContent?: string; // For markdown, code
+  order: number;
+}
+
+export interface Bookmark {
+  id: string;
+  position: number;
+  label: string;
+}
+
+export interface Note {
+  id: string;
+  position: number;
+  content: string;
+}
+
+export interface LessonProgress {
+  lessonId: string;
+  userId: string;
+  lastPosition: number; // seconds for media, percentage/scroll for text
+  isCompleted: boolean;
+  bookmarks: Bookmark[];
+  notes: Note[];
+}
+

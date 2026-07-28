@@ -39,13 +39,21 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${bricolage.variable} ${ibmPlexSans.variable} ${ibmPlexMono.variable}`}
         style={{
           fontFamily: 'var(--font-ibm-plex-sans), ui-sans-serif, system-ui, sans-serif',
         }}
       >
+        <header className="flex items-center justify-between px-6 py-4 border-b border-line bg-ink/80 backdrop-blur-md sticky top-0 z-50">
+          <div className="flex items-center gap-6">
+            <a href="/" className="font-display font-bold text-xl text-chalk tracking-tight">Corridor.</a>
+            <nav className="flex gap-4">
+              <a href="/courses" className="text-dim hover:text-chalk transition-colors text-sm">Courses</a>
+            </nav>
+          </div>
+        </header>
         {children}
       </body>
     </html>
