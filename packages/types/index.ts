@@ -42,10 +42,13 @@ export interface Course {
 export interface Program {
   id: string;
   name: string;
+  code?: string;
   description: string;
   weekCount: number;
   courseIds: string[];
   cohortIds: string[];
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Cohort {
@@ -57,11 +60,38 @@ export interface Cohort {
   instructorName: string;
   startDate: string;
   weekCount: number;
+  currentWeek?: number;
   learnerCount: number;
   teamCount: number;
   status: 'upcoming' | 'active' | 'completed';
   completionRate: number; // 0-100
 }
+
+export interface Team {
+  id: string;
+  cohortId: string;
+  name: string;
+  memberIds: string[];
+  memberNames: string[];
+  createdAt: string;
+}
+
+export type RosterStatus = 'active' | 'removed';
+
+export interface RosterMember {
+  id: string;
+  cohortId: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  githubUsername?: string;
+  teamId?: string;
+  teamName?: string;
+  joinedAt: string;
+  status: RosterStatus;
+  removedAt?: string;
+}
+
 
 export type TaskState = 'Assigned' | 'Branched' | 'Pushed' | 'In Review' | 'Closed';
 
