@@ -4,7 +4,7 @@
 // All frontend parts build against these shapes until Part 14 ships real endpoints.
 
 import type {
-  User, Course, Cohort, Program, AgentConfig, ModerationItem,
+  User, Course, Cohort, Program, Team, RosterMember, AgentConfig, ModerationItem,
   PlatformAnalytics, InstructorPerformance, AuditLogEntry,
 } from './types';
 
@@ -46,9 +46,44 @@ export const MOCK_COHORTS: Cohort[] = [
 ];
 
 export const MOCK_PROGRAMS: Program[] = [
-  { id: 'p1', name: 'Backend Engineering', description: 'Smart contract development and on-chain architecture.', weekCount: 8, courseIds: ['crs1', 'crs2', 'crs4'], cohortIds: ['c05', 'c06', 'c07'] },
-  { id: 'p2', name: 'Web3 Foundations', description: 'DApps, wallets, and the EVM for non-engineers.', weekCount: 6, courseIds: ['crs3'], cohortIds: ['c05'] },
+  { id: 'p1', name: 'Backend Engineering', code: 'BE-101', description: 'Smart contract development and on-chain architecture.', weekCount: 8, courseIds: ['crs1', 'crs2', 'crs4'], cohortIds: ['c05', 'c06', 'c07'], createdAt: '2024-01-01' },
+  { id: 'p2', name: 'Web3 Foundations', code: 'W3F-100', description: 'DApps, wallets, and the EVM for non-engineers.', weekCount: 6, courseIds: ['crs3'], cohortIds: ['c05'], createdAt: '2024-01-01' },
 ];
+
+export const MOCK_TEAMS: Team[] = [
+  { id: 't1', cohortId: 'c07', name: 'Team 1', memberIds: ['u10', 'u11', 'u12', 'u13'], memberNames: ['Learner 10', 'Learner 11', 'Learner 12', 'Learner 13'], createdAt: '2025-01-13' },
+  { id: 't2', cohortId: 'c07', name: 'Team 2', memberIds: ['u14', 'u15', 'u16', 'u17'], memberNames: ['Learner 14', 'Learner 15', 'Learner 16', 'Learner 17'], createdAt: '2025-01-13' },
+  { id: 't3', cohortId: 'c07', name: 'Team 3', memberIds: ['u18', 'u19', 'u20', 'u21'], memberNames: ['Learner 18', 'Learner 19', 'Learner 20', 'Learner 21'], createdAt: '2025-01-13' },
+  { id: 't4', cohortId: 'c07', name: 'Team 4', memberIds: ['u1', 'u2', 'u3', 'u4'], memberNames: ['Adaeze O.', 'Marcus B.', 'Priya N.', 'Tobi A.'], createdAt: '2025-01-13' },
+  { id: 't5', cohortId: 'c07', name: 'Team 5', memberIds: ['u5', 'u7', 'u22', 'u23'], memberNames: ['Ini E.', 'Zainab M.', 'Learner 22', 'Learner 23'], createdAt: '2025-01-13' },
+  { id: 't6', cohortId: 'c07', name: 'Team 6', memberIds: ['u24', 'u25', 'u26', 'u27'], memberNames: ['Learner 24', 'Learner 25', 'Learner 26', 'Learner 27'], createdAt: '2025-01-13' },
+  { id: 't7', cohortId: 'c07', name: 'Team 7', memberIds: ['u28', 'u29', 'u30', 'u31'], memberNames: ['Learner 28', 'Learner 29', 'Learner 30', 'Learner 31'], createdAt: '2025-01-13' },
+  { id: 't8', cohortId: 'c07', name: 'Team 8', memberIds: ['u32', 'u33', 'u34', 'u35'], memberNames: ['Learner 32', 'Learner 33', 'Learner 34', 'Learner 35'], createdAt: '2025-01-13' },
+  { id: 't9', cohortId: 'c07', name: 'Team 9', memberIds: ['u36', 'u37', 'u38', 'u39', 'u40'], memberNames: ['Learner 36', 'Learner 37', 'Learner 38', 'Learner 39', 'Learner 40'], createdAt: '2025-01-13' },
+];
+
+export const MOCK_ROSTER: RosterMember[] = [
+  { id: 'r1', cohortId: 'c07', userId: 'u1', userName: 'Adaeze O.', userEmail: 'adaeze@mgs.io', githubUsername: 'adaeze-o', teamId: 't4', teamName: 'Team 4', joinedAt: '2025-01-13', status: 'active' },
+  { id: 'r2', cohortId: 'c07', userId: 'u2', userName: 'Marcus B.', userEmail: 'marcus@mgs.io', githubUsername: 'marcus-b', teamId: 't4', teamName: 'Team 4', joinedAt: '2025-01-13', status: 'active' },
+  { id: 'r3', cohortId: 'c07', userId: 'u3', userName: 'Priya N.', userEmail: 'priya@mgs.io', githubUsername: 'priya-n', teamId: 't4', teamName: 'Team 4', joinedAt: '2025-01-13', status: 'active' },
+  { id: 'r4', cohortId: 'c07', userId: 'u4', userName: 'Tobi A.', userEmail: 'tobi@mgs.io', githubUsername: 'tobi-a', teamId: 't4', teamName: 'Team 4', joinedAt: '2025-01-13', status: 'active' },
+  { id: 'r5', cohortId: 'c07', userId: 'u5', userName: 'Ini E.', userEmail: 'ini@mgs.io', githubUsername: 'ini-e', teamId: 't5', teamName: 'Team 5', joinedAt: '2025-01-13', status: 'active' },
+  { id: 'r6', cohortId: 'c07', userId: 'u6', userName: 'Sam K.', userEmail: 'sam@mgs.io', githubUsername: 'sam-k', teamId: undefined, teamName: undefined, joinedAt: '2025-01-13', status: 'removed', removedAt: '2025-03-01' },
+  { id: 'r7', cohortId: 'c07', userId: 'u7', userName: 'Zainab M.', userEmail: 'zainab@mgs.io', githubUsername: 'zainab-m', teamId: 't5', teamName: 'Team 5', joinedAt: '2025-01-13', status: 'active' },
+  ...Array.from({ length: 34 }, (_, i) => ({
+    id: `r${8 + i}`,
+    cohortId: 'c07',
+    userId: `u${10 + i}`,
+    userName: `Learner ${10 + i}`,
+    userEmail: `learner${10 + i}@mgs.io`,
+    githubUsername: `learner-${10 + i}`,
+    teamId: `t${1 + (i % 9)}`,
+    teamName: `Team ${1 + (i % 9)}`,
+    joinedAt: '2025-01-13',
+    status: 'active' as const,
+  })),
+];
+
 
 export const MOCK_AGENT_CONFIGS: AgentConfig[] = [
   { agentId: 'manager', name: 'Manager', description: 'Owns task lifecycle: assigns, advances, flags, escalates.', enabled: true, autonomyLevel: 'autonomous', updatedAt: '2025-03-01T09:00:00Z', updatedBy: 'admin-1' },
