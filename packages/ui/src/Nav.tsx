@@ -33,13 +33,16 @@ export const Nav: React.FC<NavProps> = ({ currentPath }) => {
           Corridor
         </Link>
         <nav className="hidden md:flex gap-[1.6rem] ml-auto text-[.9rem] text-dim">
-          <Link href="/programs" className={`hover:text-chalk ${currentPath === '/programs' ? 'text-chalk font-semibold' : ''}`}>
+          <Link href="/programs" className={`hover:text-chalk transition-colors ${currentPath === '/programs' ? 'text-chalk font-semibold' : ''}`}>
             Programs
           </Link>
-          <Link href="/cohorts" className={`hover:text-chalk ${currentPath === '/cohorts' ? 'text-chalk font-semibold' : ''}`}>
+          <Link href="/cohorts" className={`hover:text-chalk transition-colors ${currentPath === '/cohorts' ? 'text-chalk font-semibold' : ''}`}>
             Cohorts
           </Link>
-          <Link href="/admin" className={`hover:text-chalk ${currentPath === '/admin' ? 'text-chalk font-semibold' : ''}`}>
+          <Link href="/tasks" className={`hover:text-chalk transition-colors ${currentPath === '/tasks' ? 'text-chalk font-semibold' : ''}`}>
+            Tasks
+          </Link>
+          <Link href="/admin" className={`hover:text-chalk transition-colors ${currentPath === '/admin' ? 'text-chalk font-semibold' : ''}`}>
             Admin
           </Link>
         </nav>
