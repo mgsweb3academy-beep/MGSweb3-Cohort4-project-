@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { getSecurityHeaders, getCorsHeaders } from '@/lib/security/headers';
 import { checkRateLimit, RATE_LIMIT_PRESETS, getRateLimitHeaders } from '@/lib/rate-limit/rate-limiter';
+import { auth } from '@/auth';
+import { getUserByEmail } from '@/lib/auth-store';
 
 /**
  * Corridor LMS — Core Next.js Request Middleware
@@ -11,7 +13,7 @@ import { checkRateLimit, RATE_LIMIT_PRESETS, getRateLimitHeaders } from '@/lib/r
  * - Role-Based Route Guarding
  */
 
-export async function middleware(request: NextRequest) {
+export default auth(async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const origin = request.headers.get('origin');
   const method = request.method;
@@ -62,7 +64,44 @@ export async function middleware(request: NextRequest) {
     );
   }
 
-  // 3. Process Request and Apply Headers
+  // 3. Role-Based Route Guarding
+  const session = request.auth;
+  const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/register');
+  const isApiRoute = pathname.startsWith('/api') || pathname.startsWith('/_next');
+
+  if (!session?.user && !isAuthPage && !isApiRoute && !pathname.startsWith('/invite')) {
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('callbackUrl', pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  if (session?.user) {
+    const email = session.user.email as string | undefined;
+    const storedUser = email ? getUserByEmail(email) : undefined;
+
+    if (storedUser?.status === 'suspended') {
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
+
+    const role = (session.user as any).role || 'student';
+    
+    // Redirect from root or auth pages to their respective dashboards
+    if (pathname === '/' || isAuthPage) {
+      if (role === 'admin') return NextResponse.redirect(new URL('/admin', request.url));
+      if (role === 'instructor') return NextResponse.redirect(new URL('/instructor', request.url));
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
+
+    // Role Guarding
+    if (pathname.startsWith('/admin') && role !== 'admin') {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
+    if (pathname.startsWith('/instructor') && role !== 'instructor' && role !== 'admin') {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
+  }
+
+  // 4. Process Request and Apply Headers
   const response = NextResponse.next();
 
   // Attach Security Headers
@@ -83,7 +122,7 @@ export async function middleware(request: NextRequest) {
   });
 
   return response;
-}
+});
 
 export const config = {
   matcher: [
