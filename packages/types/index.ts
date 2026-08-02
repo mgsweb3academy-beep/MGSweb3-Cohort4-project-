@@ -273,3 +273,49 @@ export interface LessonProgress {
   notes: Note[];
 }
 
+export interface LoginRequest {
+  email: string;
+  password?: string;
+  provider?: 'credentials' | 'github' | 'google';
+}
+
+export interface LoginResponse {
+  token: string;
+  user: User;
+}
+
+export interface RegisterRequest {
+  email: string;
+  password?: string;
+  name: string;
+  provider?: 'credentials' | 'github' | 'google';
+}
+
+export interface RegisterResponse {
+  token: string;
+  user: User;
+}
+
+export interface VerifyEmailRequest {
+  token: string;
+}
+
+export interface ResetPasswordRequest {
+  email: string;
+}
+
+export interface ResetPasswordConfirmRequest {
+  token: string;
+  newPassword: string;
+}
+
+export interface InviteAcceptRequest {
+  code: string;
+}
+
+export interface InviteAcceptResponse {
+  success: boolean;
+  cohortId: string;
+  enrollmentId: string;
+}
+
