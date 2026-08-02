@@ -95,16 +95,48 @@ export interface RosterMember {
 
 export type TaskState = 'Assigned' | 'Branched' | 'Pushed' | 'In Review' | 'Closed';
 
+/** Canonical ordering — used to validate forward-only transitions. */
+export const TASK_STATES: TaskState[] = [
+  'Assigned',
+  'Branched',
+  'Pushed',
+  'In Review',
+  'Closed',
+];
+
+export type TaskPriority = 'low' | 'medium' | 'high';
+
+/**
+ * A single state change on a Task.
+ * by: 'system' | 'manager' | userId
+ * Parts 6, 7, and 8 write transitions; Part 5 owns the model.
+ */
+export interface TaskTransition {
+  from: TaskState | null; // null on creation
+  to: TaskState;
+  at: string;      // ISO timestamp
+  by: string;      // 'system' | 'manager' | userId
+  byName: string;  // 'System' | 'Manager' | user display name
+}
+
 export interface Task {
   id: string;
   title: string;
+  description?: string;
   teamId: string;
   teamName: string;
   cohortId: string;
+  /** Optional reference to a Lesson (Part 4). */
+  lessonId?: string;
+  lessonTitle?: string;
   state: TaskState;
+  priority?: TaskPriority;
+  dueDate?: string;        // ISO date string
   createdAt: string;
   updatedAt: string;
   closedAt?: string;
+  /** Full transition history. Append-only; never mutate past entries. */
+  transitions: TaskTransition[];
 }
 
 export interface Contribution {
