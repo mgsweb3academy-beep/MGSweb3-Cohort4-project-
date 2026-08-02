@@ -148,3 +148,86 @@ Add a note.
 ```json
 { "id": "n2", "position": 130, "content": "My private note" }
 ```
+
+## Part 8: Admin Panel & Platform Management
+
+### 1. User Management
+
+#### GET /admin/users
+List all users.
+**Response:** `User[]`
+
+#### PUT /admin/users/:id/role
+Update user role.
+**Body:** `{ "role": "student" | "instructor" | "admin" }`
+**Response:** `User`
+
+#### PUT /admin/users/:id/suspend
+Suspend a user.
+**Body:** `{ "reason": "Violation of policy" }`
+**Response:** `User`
+
+#### PUT /admin/users/:id/reinstate
+Reinstate a suspended user.
+**Response:** `User`
+
+#### POST /admin/users/bulk-invite
+Bulk invite users.
+**Body:** `{ "emails": ["user1@mgs.io", "user2@mgs.io"] }`
+**Response:** `{ "invited": 2 }`
+
+### 2. Tutor Management
+
+#### GET /admin/tutors/performance
+Get instructor performance metrics.
+**Response:** `InstructorPerformance[]`
+
+### 3. Course Approval Workflow
+
+#### PUT /admin/courses/:id/approve
+Approve a course, changing its status to `published`.
+**Response:** `Course`
+
+#### PUT /admin/courses/:id/reject
+Reject a course.
+**Body:** `{ "reason": "Needs more detail in lesson 2" }`
+**Response:** `Course`
+
+### 4. Analytics
+
+#### GET /admin/analytics
+Get platform-wide analytics.
+**Response:** `PlatformAnalytics`
+
+### 5. AI Agent Configuration
+
+#### GET /admin/agents
+List agent configurations.
+**Response:** `AgentConfig[]`
+
+#### PUT /admin/agents/:id/toggle
+Enable or disable an agent.
+**Body:** `{ "enabled": true }`
+**Response:** `AgentConfig`
+
+#### PUT /admin/agents/course-autonomy
+Set per-course autonomy level for the manager agent.
+**Body:** `{ "courseId": "c1", "level": "suggest_only" | "autonomous" }`
+
+### 6. Reporting
+
+#### POST /admin/reports
+Generate cohort or program report.
+**Body:** `{ "format": "csv" | "pdf", "programId"?: "p1", "cohortId"?: "c1" }`
+**Response:** `{ "url": "/downloads/report-1234.pdf" }`
+
+### 7. Moderation Queue
+
+#### GET /admin/moderation
+List pending moderation items.
+**Response:** `ModerationItem[]`
+
+#### PUT /admin/moderation/:id/resolve
+Resolve a moderation item.
+**Body:** `{ "action": "dismiss" | "remove" | "warn" | "escalate" }`
+**Response:** `ModerationItem`
