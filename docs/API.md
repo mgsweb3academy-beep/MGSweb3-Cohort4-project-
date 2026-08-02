@@ -231,3 +231,65 @@ List pending moderation items.
 Resolve a moderation item.
 **Body:** `{ "action": "dismiss" | "remove" | "warn" | "escalate" }`
 **Response:** `ModerationItem`
+## Part 2: Auth & Onboarding
+
+### 1. Authentication
+
+#### POST /auth/login
+Login with email/password.
+**Body:**
+```json
+{
+  "email": "student@example.com",
+  "password": "password123"
+}
+```
+**Response:**
+```json
+{
+  "token": "jwt_token_here",
+  "user": {
+    "id": "user_123",
+    "name": "Jane Doe",
+    "email": "student@example.com",
+    "role": "student"
+  }
+}
+```
+
+#### POST /auth/register
+Register a new user.
+**Body:**
+```json
+{
+  "email": "new@example.com",
+  "password": "password123",
+  "name": "New Student"
+}
+```
+**Response:**
+```json
+{
+  "token": "jwt_token_here",
+  "user": {
+    "id": "user_124",
+    "name": "New Student",
+    "email": "new@example.com",
+    "role": "student"
+  }
+}
+```
+
+### 2. Invites & Onboarding
+
+#### POST /invites/:code/accept
+Accept a cohort invite code.
+**Body:** `{}`
+**Response:**
+```json
+{
+  "success": true,
+  "cohortId": "cohort_07",
+  "enrollmentId": "enr_999"
+}
+```

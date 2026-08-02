@@ -11,3 +11,4 @@ export * from './ContributionMatrix';
 export * from './CohortPanel';
 export * from './FlowStrip';
 export * from './Status';
+export * from './Input';
