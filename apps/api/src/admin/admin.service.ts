@@ -65,6 +65,10 @@ export class AdminService {
   }
 
   // --- Courses ---
+  getCourses(): Course[] {
+    return this.courses;
+  }
+
   approveCourse(id: string): Course {
     const course = this.courses.find(c => c.id === id);
     if (!course) throw new NotFoundException('Course not found');

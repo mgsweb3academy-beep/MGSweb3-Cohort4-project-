@@ -1,3 +1,4 @@
 import { handlers } from '@/auth';
 
-export const { GET, POST } = handlers;
+const { GET, POST } = handlers;
+export { GET, POST };
