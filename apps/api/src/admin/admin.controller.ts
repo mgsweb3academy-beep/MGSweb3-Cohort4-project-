@@ -39,6 +39,11 @@ export class AdminController {
   }
 
   // 8.3 Course Approval Workflow
+  @Get('courses')
+  getCourses() {
+    return this.adminService.getCourses();
+  }
+
   @Put('courses/:id/approve')
   approveCourse(@Param('id') id: string) {
     return this.adminService.approveCourse(id);
