@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { NotificationBell } from './NotificationBell';
+import { Notification } from 'types';
 
 interface NavProps {
   currentPath?: string;
@@ -9,6 +11,7 @@ interface NavProps {
 
 export const Nav: React.FC<NavProps> = ({ currentPath }) => {
   const [stuck, setStuck] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
 
   useEffect(() => {
     const onScroll = () => setStuck(window.scrollY > 40);
@@ -47,6 +50,10 @@ export const Nav: React.FC<NavProps> = ({ currentPath }) => {
           </Link>
         </nav>
         <div className="flex gap-[.5rem] items-center ml-auto md:ml-0">
+          <NotificationBell 
+            notifications={notifications} 
+            onMarkAsRead={(id) => setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n))} 
+          />
           <Link className="btn text-xs px-3 py-1.5 rounded-lg border border-[var(--line)] hover:bg-[var(--ink-3)]" href="/cohorts">
             Sign in
           </Link>
