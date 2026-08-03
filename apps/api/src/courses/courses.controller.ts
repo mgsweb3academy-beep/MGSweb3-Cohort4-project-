@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Post, Body } from '@nestjs/common';
+import { Controller, Get, Param, Post, Body, Delete } from '@nestjs/common';
 import { CoursesService } from './courses.service';
 import { Course } from 'types';
 
@@ -24,5 +24,11 @@ export class CoursesController {
   @Post(':id/request-review')
   requestReview(@Param('id') id: string): Course {
     return this.coursesService.requestReview(id);
+  }
+
+  @Delete(':id')
+  remove(@Param('id') id: string): { success: boolean } {
+    this.coursesService.remove(id);
+    return { success: true };
   }
 }

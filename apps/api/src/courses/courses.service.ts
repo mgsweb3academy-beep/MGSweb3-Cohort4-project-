@@ -65,4 +65,12 @@ export class CoursesService {
     course.submittedAt = new Date().toISOString();
     return course;
   }
+
+  remove(id: string): void {
+    const index = this.courses.findIndex(c => c.id === id);
+    if (index === -1) {
+      throw new NotFoundException(`Course with ID ${id} not found`);
+    }
+    this.courses.splice(index, 1);
+  }
 }

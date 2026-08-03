@@ -1,6 +1,7 @@
 import { Course } from 'types';
 import { Card, Badge, Button } from 'ui';
 import Link from 'next/link';
+import DeleteCourseButton from './DeleteCourseButton';
 
 async function getCourses(): Promise<Course[]> {
   try {
@@ -40,6 +41,7 @@ export default async function CoursesPage() {
           <Link href="/courses/new">
             <Button variant="solid">Create Course</Button>
           </Link>
+          <DeleteCourseButton courses={courses} />
         </div>
       </div>
 
