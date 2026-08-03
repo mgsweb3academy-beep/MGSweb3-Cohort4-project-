@@ -18,9 +18,7 @@ export default function DeleteCourseButton({ courses }: Props) {
   const handleDelete = async () => {
     if (!selectedCourseId) return;
     
-    // First give a prompt warning to reconfirm
-    const confirmed = window.confirm('⚠️ Are you sure of this action? This will permanently delete the course.');
-    if (!confirmed) return;
+    // The modal itself acts as the confirmation per the new design
 
     setIsDeleting(true);
     try {
@@ -45,9 +43,12 @@ export default function DeleteCourseButton({ courses }: Props) {
 
   return (
     <>
-      <Button variant="danger" onClick={() => setIsOpen(true)}>
-        Delete Course
-      </Button>
+      <button 
+        onClick={() => setIsOpen(true)}
+        className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors font-medium text-sm flex items-center gap-2"
+      >
+        <span>⚠️</span> Delete Course
+      </button>
 
       {isOpen && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
@@ -55,8 +56,8 @@ export default function DeleteCourseButton({ courses }: Props) {
             <h2 className="text-xl font-display font-bold mb-4 flex items-center gap-2">
               <span className="text-amber-500">⚠️</span> Delete Course
             </h2>
-            <p className="text-dim mb-4 text-sm">
-              Select a course to remove. This action cannot be undone.
+            <p className="text-dim mb-4 text-sm font-medium">
+              Are you sure you want to delete this course? You can not undo the effect of this action
             </p>
             
             <select 
