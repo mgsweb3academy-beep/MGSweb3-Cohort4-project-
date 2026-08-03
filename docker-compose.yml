@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - DATABASE_URL=postgresql://corridor_user:corridor_pass@postgres:5432/corridor_db?schema=public
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=corridor_dev_secret_key_change_in_prod
+      - AI_SERVICE_URL=http://ai-service:8000
+    depends_on:
+      - postgres
+      - redis
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: corridor_user
+      POSTGRES_PASSWORD: corridor_pass
+      POSTGRES_DB: corridor_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+volumes:
+  postgres_data:

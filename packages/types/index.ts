@@ -211,3 +211,72 @@ export interface LessonProgress {
   notes: Note[];
 }
 
+export interface WalletLinkRequest {
+  address: string;
+  signature?: string;
+  chainId?: number;
+}
+
+export interface DiscussionPost {
+  id: string;
+  courseId?: string;
+  cohortId?: string;
+  authorId: string;
+  authorName: string;
+  authorAvatar?: string;
+  title: string;
+  content: string;
+  isFlagged: boolean;
+  createdAt: string;
+  commentCount: number;
+}
+
+export interface DiscussionComment {
+  id: string;
+  postId: string;
+  authorId: string;
+  authorName: string;
+  authorAvatar?: string;
+  content: string;
+  isAiGenerated: boolean;
+  createdAt: string;
+}
+
+export interface Notification {
+  id: string;
+  userId: string;
+  type: 'review_ready' | 'task_assigned' | 'deadline_approaching' | 'certificate_issued' | 'announcement';
+  title: string;
+  message: string;
+  isRead: boolean;
+  linkUrl?: string;
+  createdAt: string;
+}
+
+export interface HealthStatus {
+  status: 'ok' | 'degraded' | 'error';
+  timestamp: string;
+  services: {
+    database: 'up' | 'down';
+    redis: 'up' | 'down';
+    aiService: 'up' | 'degraded' | 'down';
+  };
+}
+
+export interface ApiError {
+  error: {
+    code: string;
+    message: string;
+    details?: unknown;
+  };
+}
+
+export interface ApiResponse<T> {
+  data: T;
+  meta?: {
+    cursor?: string;
+    total?: number;
+  };
+}
+
+
