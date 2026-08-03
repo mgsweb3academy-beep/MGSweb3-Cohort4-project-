@@ -239,3 +239,68 @@ export interface AuditLogEntry {
   timestamp: string;
   detail?: string;
 }
+
+export interface TutorEvidence {
+  lessonId: string;
+  lessonTitle: string;
+  excerpt: string;
+}
+
+export interface TutorAnswer {
+  id: string;
+  lessonId: string;
+  lessonTitle: string;
+  question: string;
+  answer: string;
+  evidence: TutorEvidence[];
+  confidence: number;
+  createdAt: string;
+}
+
+export type QuizQuestionType = 'multiple_choice' | 'true_false' | 'short_answer';
+
+export interface QuizQuestion {
+  id: string;
+  lessonId: string;
+  type: QuizQuestionType;
+  prompt: string;
+  options?: string[];
+  correctAnswer?: string;
+  explanation?: string;
+  points: number;
+}
+
+export interface QuizAttemptAnswer {
+  questionId: string;
+  prompt: string;
+  submittedAnswer: string;
+  isCorrect: boolean;
+  pointsAwarded: number;
+}
+
+export interface QuizAttempt {
+  id: string;
+  lessonId: string;
+  score: number;
+  maxScore: number;
+  completedAt: string;
+  answers: QuizAttemptAnswer[];
+}
+
+export interface Recommendation {
+  lessonId: string;
+  lessonTitle: string;
+  reason: string;
+  confidence: number;
+}
+
+export interface InstructorDraft {
+  id: string;
+  courseId: string;
+  type: 'announcement' | 'rubric' | 'content_suggestion';
+  title: string;
+  content: string;
+  requiresApproval: boolean;
+  createdAt: string;
+  status: 'draft' | 'approved' | 'discarded';
+}
