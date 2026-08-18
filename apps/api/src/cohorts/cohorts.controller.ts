@@ -15,17 +15,17 @@ export class CohortsController {
   constructor(private readonly cohortsService: CohortsService) {}
 
   @Get()
-  findAll(): Cohort[] {
+  async findAll() {
     return this.cohortsService.findAll();
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string): Cohort {
+  async findOne(@Param('id') id: string) {
     return this.cohortsService.findOne(id);
   }
 
   @Post()
-  create(
+  async create(
     @Body()
     body: {
       name: string;
@@ -35,24 +35,24 @@ export class CohortsController {
       instructorId?: string;
       instructorName?: string;
     }
-  ): Cohort {
+  ) {
     return this.cohortsService.create(body);
   }
 
   @Put(':id')
-  update(@Param('id') id: string, @Body() body: Partial<Cohort>): Cohort {
+  async update(@Param('id') id: string, @Body() body: Partial<Cohort>) {
     return this.cohortsService.update(id, body);
   }
 
   // --- Roster endpoints ---
 
   @Get(':id/roster')
-  getRoster(@Param('id') id: string): RosterMember[] {
+  async getRoster(@Param('id') id: string) {
     return this.cohortsService.getRoster(id);
   }
 
   @Post(':id/roster')
-  addLearner(
+  async addLearner(
     @Param('id') id: string,
     @Body()
     body: {
@@ -61,47 +61,47 @@ export class CohortsController {
       userEmail: string;
       githubUsername?: string;
     }
-  ): RosterMember {
+  ) {
     return this.cohortsService.addLearnerToRoster(id, body);
   }
 
   @Delete(':id/roster/:userId')
-  softRemoveLearner(
+  async softRemoveLearner(
     @Param('id') cohortId: string,
     @Param('userId') userId: string
-  ): RosterMember {
+  ) {
     return this.cohortsService.softRemoveLearner(cohortId, userId);
   }
 
   // --- Team endpoints ---
 
   @Get(':id/teams')
-  getTeams(@Param('id') id: string): Team[] {
+  async getTeams(@Param('id') id: string) {
     return this.cohortsService.getTeams(id);
   }
 
   @Post(':id/teams')
-  createTeam(
+  async createTeam(
     @Param('id') id: string,
     @Body() body: { name: string; memberIds?: string[]; memberNames?: string[] }
-  ): Team {
+  ) {
     return this.cohortsService.createTeam(id, body);
   }
 
   @Put(':id/teams/:teamId')
-  updateTeam(
+  async updateTeam(
     @Param('id') cohortId: string,
     @Param('teamId') teamId: string,
     @Body() body: { name?: string; memberIds?: string[]; memberNames?: string[] }
-  ): Team {
+  ) {
     return this.cohortsService.updateTeam(cohortId, teamId, body);
   }
 
   @Delete(':id/teams/:teamId')
-  deleteTeam(
+  async deleteTeam(
     @Param('id') cohortId: string,
     @Param('teamId') teamId: string
-  ): { success: boolean } {
+  ) {
     return this.cohortsService.deleteTeam(cohortId, teamId);
   }
 }

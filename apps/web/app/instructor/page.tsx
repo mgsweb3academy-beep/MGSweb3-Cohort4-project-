@@ -2,6 +2,9 @@
 
 import * as React from 'react';
 import { Button, Card } from 'ui';
+import { InstructorBoard } from './components/InstructorBoard';
+import { InstructorSplit } from './components/InstructorSplit';
+import { InstructorQueue } from './components/InstructorQueue';
 
 export default function InstructorDashboardPage() {
   const [drafts, setDrafts] = React.useState<Array<{ id: string; title: string; content: string; type: string; requiresApproval: boolean; createdAt: string }>>([]);
@@ -42,15 +45,15 @@ export default function InstructorDashboardPage() {
           <p className="max-w-2xl text-[var(--dim)]">Review what needs a person, keep the cohort moving, and oversee invites and roster changes.</p>
         </header>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <Card className="bg-[var(--ink-2)] p-6">
-            <h2 className="text-xl font-semibold">Current cohort</h2>
-            <p className="mt-2 text-[var(--dim)]">Backend Engineering · Cohort 07 · Week 5 of 8</p>
-          </Card>
-          <Card className="bg-[var(--ink-2)] p-6">
-            <h2 className="text-xl font-semibold">Needs attention</h2>
-            <p className="mt-2 text-[var(--dim)]">Team 4 still requires a human review after the manager flagged contribution imbalance.</p>
-          </Card>
+        <div className="grid gap-6 md:grid-cols-3">
+          {/* Card 1: The Board */}
+          <InstructorBoard />
+          
+          {/* Card 2: The Split */}
+          <InstructorSplit />
+          
+          {/* Card 3: The Queue */}
+          <InstructorQueue />
         </div>
 
         <Card className="bg-[var(--ink-2)] p-6">

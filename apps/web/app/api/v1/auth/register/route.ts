@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { RegisterRequest, RegisterResponse, User } from '@repo/types';
+import { RegisterRequest, RegisterResponse, User } from '@/lib/types';
 import { createUser, getUserByEmail } from '@/lib/auth-store';
 
 export async function POST(req: Request) {

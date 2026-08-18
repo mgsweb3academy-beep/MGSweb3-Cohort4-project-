@@ -1,0 +1,187 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id               String    @id @default(uuid())
+  name             String
+  email            String    @unique
+  role             String // 'student' | 'instructor' | 'admin'
+  status           String    @default("active") // 'active' | 'suspended'
+  githubUsername   String?
+  avatarUrl        String?
+  joinedAt         DateTime  @default(now())
+  cohortIds        String[]
+  suspendedAt      DateTime?
+  suspendedBy      String?
+  suspensionReason String?
+
+  // Relations
+  reviews TaskReview[]
+}
+
+model Program {
+  id          String   @id @default(uuid())
+  name        String
+  code        String?
+  description String
+  weekCount   Int
+  courseIds   String[]
+  cohortIds   String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  cohorts Cohort[]
+  courses Course[]
+}
+
+model Cohort {
+  id             String   @id @default(uuid())
+  name           String
+  programId      String
+  programName    String
+  instructorId   String
+  instructorName String
+  startDate      DateTime
+  weekCount      Int
+  currentWeek    Int?
+  learnerCount   Int      @default(0)
+  teamCount      Int      @default(0)
+  status         String   @default("upcoming") // 'upcoming' | 'active' | 'completed'
+  completionRate Float    @default(0.0)
+
+  // Relations
+  program       Program        @relation(fields: [programId], references: [id])
+  teams         Team[]
+  rosterMembers RosterMember[]
+  tasks         Task[]
+}
+
+model Course {
+  id              String    @id @default(uuid())
+  title           String
+  programId       String
+  programName     String
+  instructorId    String
+  instructorName  String
+  status          String    @default("draft") // 'draft' | 'in_review' | 'published' | 'rejected'
+  submittedAt     DateTime?
+  reviewedAt      DateTime?
+  reviewedBy      String?
+  rejectionReason String?
+  publishedAt     DateTime?
+  lessonCount     Int       @default(0)
+  enrollmentCount Int       @default(0)
+
+  // Relations
+  program Program @relation(fields: [programId], references: [id])
+}
+
+model Team {
+  id          String   @id @default(uuid())
+  cohortId    String
+  name        String
+  memberIds   String[]
+  memberNames String[]
+  createdAt   DateTime @default(now())
+
+  // Relations
+  cohort Cohort @relation(fields: [cohortId], references: [id])
+  tasks  Task[]
+}
+
+model RosterMember {
+  id             String    @id @default(uuid())
+  cohortId       String
+  userId         String
+  userName       String
+  userEmail      String
+  githubUsername String?
+  teamId         String?
+  teamName       String?
+  joinedAt       DateTime  @default(now())
+  status         String    @default("active") // 'active' | 'removed'
+  removedAt      DateTime?
+
+  // Relations
+  cohort Cohort @relation(fields: [cohortId], references: [id])
+}
+
+model Task {
+  id             String   @id @default(uuid())
+  title          String
+  type           String
+  state          String // 'Assigned' | 'Branched' | 'Pushed' | 'In Review' | 'Closed'
+  cohortId       String
+  courseId       String
+  teamId         String
+  assigneeId     String?
+  assigneeName   String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  prUrl          String?
+  repositoryUrl  String?
+  branchName     String?
+  commitCount    Int?
+  additions      Int?
+  deletions      Int?
+  requiresReview Boolean  @default(false)
+  autoMerge      Boolean  @default(false)
+
+  // Relations
+  cohort      Cohort           @relation(fields: [cohortId], references: [id])
+  team        Team             @relation(fields: [teamId], references: [id])
+  transitions TaskTransition[]
+  reviews     TaskReview[]
+}
+
+model TaskTransition {
+  id        String   @id @default(uuid())
+  taskId    String
+  fromState String?
+  toState   String
+  actorId   String
+  actorName String
+  timestamp DateTime @default(now())
+  reason    String?
+
+  // Relations
+  task Task @relation(fields: [taskId], references: [id])
+}
+
+model TaskReview {
+  id         String   @id @default(uuid())
+  taskId     String
+  reviewerId String
+  status     String // 'approved' | 'changes_requested'
+  comment    String?
+  timestamp  DateTime @default(now())
+
+  // Relations
+  task Task @relation(fields: [taskId], references: [id])
+  user User @relation(fields: [reviewerId], references: [id])
+}
+
+model AgentConfig {
+  id            String  @id
+  name          String
+  enabled       Boolean @default(true)
+  autonomyLevel String // 'suggest_only' | 'autonomous'
+}
+
+model AgentLog {
+  id        String   @id @default(uuid())
+  agentId   String
+  action    String
+  status    String // 'applied' | 'proposed'
+  timestamp DateTime @default(now())
+  cohortId  String?
+  teamId    String?
+  taskId    String?
+}

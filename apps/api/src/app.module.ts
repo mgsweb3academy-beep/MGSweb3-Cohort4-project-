@@ -8,9 +8,16 @@ import { AdminModule } from './admin/admin.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { DiscussionsModule } from './discussions/discussions.module';
 import { AnnouncementsModule } from './announcements/announcements.module';
+import { PrismaModule } from './prisma/prisma.module';
+import { AuthModule } from './auth/auth.module';
+import { TasksModule } from './tasks/tasks.module';
+import { AiManagerModule } from './ai-manager/ai-manager.module';
 
 @Module({
   imports: [
+    PrismaModule,
+    AuthModule,
+    TasksModule,
     CoursesModule,
     LessonsModule,
     ProgressModule,
@@ -20,7 +27,7 @@ import { AnnouncementsModule } from './announcements/announcements.module';
     NotificationsModule,
     DiscussionsModule,
     AnnouncementsModule,
+    AiManagerModule,
   ],
 })
 export class AppModule {}
-

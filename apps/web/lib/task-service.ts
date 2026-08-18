@@ -18,7 +18,7 @@ const VALID_TRANSITIONS: Record<TaskState, TaskState[]> = {
   Assigned:    ['Branched'],
   Branched:    ['Pushed'],
   Pushed:      ['In Review'],
-  'In Review': ['Closed'],
+  'In Review': ['Closed', 'Pushed'], // closed = approved, pushed = changes requested
   Closed:      ['Assigned'], // reopen only
 };
 
@@ -38,10 +38,10 @@ export function validateTransition(from: TaskState, to: TaskState): string | nul
 }
 
 /**
- * Returns true if moving from → to is a "reopen" (backward) action.
+ * Returns true if moving from → to is a "reopen" or "changes requested" (backward) action.
  */
 export function isReopen(from: TaskState, to: TaskState): boolean {
-  return from === 'Closed' && to === 'Assigned';
+  return (from === 'Closed' && to === 'Assigned') || (from === 'In Review' && to === 'Pushed');
 }
 
 /**

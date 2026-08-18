@@ -5,8 +5,47 @@
 
 import type {
   User, Course, Cohort, Program, Team, RosterMember, AgentConfig, ModerationItem,
-  PlatformAnalytics, InstructorPerformance, AuditLogEntry, Task,
+  PlatformAnalytics, InstructorPerformance, AuditLogEntry, Task, AgentLog
 } from './types';
+
+// ============================================================================
+// PART 8: MOCK AGENT CONFIG & LOGS
+// ============================================================================
+
+export const AGENT_CONFIG: AgentConfig[] = [
+  {
+    id: 'manager',
+    name: 'Task Orchestrator',
+    enabled: true,
+    autonomyLevel: 'autonomous'
+  },
+  {
+    id: 'review',
+    name: 'Code Reviewer',
+    enabled: true,
+    autonomyLevel: 'suggest_only'
+  }
+];
+
+export const MOCK_AGENT_LOGS: AgentLog[] = [
+  {
+    id: 'log-01',
+    agentId: 'manager',
+    action: 'Reopened 3 tasks merged without review.',
+    status: 'applied',
+    timestamp: '2025-03-10T10:00:00Z',
+    cohortId: 'c07'
+  },
+  {
+    id: 'log-02',
+    agentId: 'manager',
+    action: 'Flagged Team 4 — one member wrote 82% of the contribution.',
+    status: 'applied',
+    timestamp: '2025-03-11T14:30:00Z',
+    cohortId: 'c07',
+    teamId: 't4'
+  }
+];
 
 export const MOCK_USERS: User[] = [
   { id: 'u1', name: 'Adaeze O.', email: 'adaeze@mgs.io', role: 'student', status: 'active', githubUsername: 'adaeze-o', joinedAt: '2025-01-10', cohortIds: ['c07'], avatarUrl: '' },
@@ -323,6 +362,17 @@ export const MOCK_TASKS: Task[] = [
       { from: 'Branched', to: 'Pushed', at: '2025-03-07T17:30:00Z', by: 'u4', byName: 'Tobi A.' },
       { from: 'Pushed', to: 'In Review', at: '2025-03-10T08:45:00Z', by: 'system', byName: 'System' },
     ],
+    reviews: [
+      {
+        id: 'rev-01',
+        taskId: 'task-10',
+        reviewerId: 'u5',
+        reviewerName: 'Alice Z.',
+        status: 'approved',
+        comment: 'Looks great! Clean auth flow.',
+        createdAt: '2025-03-10T09:00:00Z',
+      }
+    ]
   },
   {
     id: 'task-11',
@@ -379,9 +429,29 @@ export const MOCK_TASKS: Task[] = [
       { from: null, to: 'Assigned', at: '2025-01-20T09:00:00Z', by: 'manager', byName: 'Manager' },
       { from: 'Assigned', to: 'Branched', at: '2025-01-21T10:00:00Z', by: 'system', byName: 'System' },
       { from: 'Branched', to: 'Pushed', at: '2025-01-28T16:00:00Z', by: 'system', byName: 'System' },
-      { from: 'Pushed', to: 'In Review', at: '2025-01-29T09:00:00Z', by: 'system', byName: 'System' },
-      { from: 'In Review', to: 'Closed', at: '2025-02-01T11:00:00Z', by: 'manager', byName: 'Manager' },
+      { from: 'Pushed', to: 'In Review', at: '2025-03-14T08:00:00Z', by: 'system', byName: 'System' },
+      { from: 'In Review', to: 'Closed', at: '2025-03-15T09:00:00Z', by: 'manager', byName: 'Manager' },
     ],
+    reviews: [
+      {
+        id: 'rev-02',
+        taskId: 'task-13',
+        reviewerId: 'u6',
+        reviewerName: 'Bob Y.',
+        status: 'approved',
+        comment: 'Colors match the design spec.',
+        createdAt: '2025-03-14T10:00:00Z',
+      },
+      {
+        id: 'rev-03',
+        taskId: 'task-13',
+        reviewerId: 'u7',
+        reviewerName: 'Charlie W.',
+        status: 'approved',
+        comment: 'Agreed, good to merge.',
+        createdAt: '2025-03-14T14:30:00Z',
+      }
+    ]
   },
   {
     id: 'task-14',
