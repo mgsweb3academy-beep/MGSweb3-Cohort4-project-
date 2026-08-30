@@ -42,10 +42,13 @@ export interface Course {
 export interface Program {
   id: string;
   name: string;
+  code?: string;
   description: string;
   weekCount: number;
   courseIds: string[];
   cohortIds: string[];
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Cohort {
@@ -57,24 +60,83 @@ export interface Cohort {
   instructorName: string;
   startDate: string;
   weekCount: number;
+  currentWeek?: number;
   learnerCount: number;
   teamCount: number;
   status: 'upcoming' | 'active' | 'completed';
   completionRate: number; // 0-100
 }
 
+export interface Team {
+  id: string;
+  cohortId: string;
+  name: string;
+  memberIds: string[];
+  memberNames: string[];
+  createdAt: string;
+}
+
+export type RosterStatus = 'active' | 'removed';
+
+export interface RosterMember {
+  id: string;
+  cohortId: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  githubUsername?: string;
+  teamId?: string;
+  teamName?: string;
+  joinedAt: string;
+  status: RosterStatus;
+  removedAt?: string;
+}
+
+
 export type TaskState = 'Assigned' | 'Branched' | 'Pushed' | 'In Review' | 'Closed';
+
+/** Canonical ordering — used to validate forward-only transitions. */
+export const TASK_STATES: TaskState[] = [
+  'Assigned',
+  'Branched',
+  'Pushed',
+  'In Review',
+  'Closed',
+];
+
+export type TaskPriority = 'low' | 'medium' | 'high';
+
+/**
+ * A single state change on a Task.
+ * by: 'system' | 'manager' | userId
+ * Parts 6, 7, and 8 write transitions; Part 5 owns the model.
+ */
+export interface TaskTransition {
+  from: TaskState | null; // null on creation
+  to: TaskState;
+  at: string;      // ISO timestamp
+  by: string;      // 'system' | 'manager' | userId
+  byName: string;  // 'System' | 'Manager' | user display name
+}
 
 export interface Task {
   id: string;
   title: string;
+  description?: string;
   teamId: string;
   teamName: string;
   cohortId: string;
+  /** Optional reference to a Lesson (Part 4). */
+  lessonId?: string;
+  lessonTitle?: string;
   state: TaskState;
+  priority?: TaskPriority;
+  dueDate?: string;        // ISO date string
   createdAt: string;
   updatedAt: string;
   closedAt?: string;
+  /** Full transition history. Append-only; never mutate past entries. */
+  transitions: TaskTransition[];
 }
 
 export interface Contribution {
@@ -176,4 +238,69 @@ export interface AuditLogEntry {
   performedByName: string;
   timestamp: string;
   detail?: string;
+}
+
+export interface TutorEvidence {
+  lessonId: string;
+  lessonTitle: string;
+  excerpt: string;
+}
+
+export interface TutorAnswer {
+  id: string;
+  lessonId: string;
+  lessonTitle: string;
+  question: string;
+  answer: string;
+  evidence: TutorEvidence[];
+  confidence: number;
+  createdAt: string;
+}
+
+export type QuizQuestionType = 'multiple_choice' | 'true_false' | 'short_answer';
+
+export interface QuizQuestion {
+  id: string;
+  lessonId: string;
+  type: QuizQuestionType;
+  prompt: string;
+  options?: string[];
+  correctAnswer?: string;
+  explanation?: string;
+  points: number;
+}
+
+export interface QuizAttemptAnswer {
+  questionId: string;
+  prompt: string;
+  submittedAnswer: string;
+  isCorrect: boolean;
+  pointsAwarded: number;
+}
+
+export interface QuizAttempt {
+  id: string;
+  lessonId: string;
+  score: number;
+  maxScore: number;
+  completedAt: string;
+  answers: QuizAttemptAnswer[];
+}
+
+export interface Recommendation {
+  lessonId: string;
+  lessonTitle: string;
+  reason: string;
+  confidence: number;
+}
+
+export interface InstructorDraft {
+  id: string;
+  courseId: string;
+  type: 'announcement' | 'rubric' | 'content_suggestion';
+  title: string;
+  content: string;
+  requiresApproval: boolean;
+  createdAt: string;
+  status: 'draft' | 'approved' | 'discarded';
 }

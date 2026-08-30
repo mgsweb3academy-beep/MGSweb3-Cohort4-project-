@@ -19,7 +19,11 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "ui": ["../../packages/ui/src/index.ts"],
+      "ui/*": ["../../packages/ui/src/*"],
+      "@packages/ui": ["../../packages/ui/src/index.ts"],
+      "types": ["../../packages/types/index.ts"]
     }
   },
   "include": [

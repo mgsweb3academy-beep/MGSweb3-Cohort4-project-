@@ -4,8 +4,8 @@
 // All frontend parts build against these shapes until Part 14 ships real endpoints.
 
 import type {
-  User, Course, Cohort, Program, AgentConfig, ModerationItem,
-  PlatformAnalytics, InstructorPerformance, AuditLogEntry,
+  User, Course, Cohort, Program, Team, RosterMember, AgentConfig, ModerationItem,
+  PlatformAnalytics, InstructorPerformance, AuditLogEntry, Task,
 } from './types';
 
 export const MOCK_USERS: User[] = [
@@ -46,9 +46,44 @@ export const MOCK_COHORTS: Cohort[] = [
 ];
 
 export const MOCK_PROGRAMS: Program[] = [
-  { id: 'p1', name: 'Backend Engineering', description: 'Smart contract development and on-chain architecture.', weekCount: 8, courseIds: ['crs1', 'crs2', 'crs4'], cohortIds: ['c05', 'c06', 'c07'] },
-  { id: 'p2', name: 'Web3 Foundations', description: 'DApps, wallets, and the EVM for non-engineers.', weekCount: 6, courseIds: ['crs3'], cohortIds: ['c05'] },
+  { id: 'p1', name: 'Backend Engineering', code: 'BE-101', description: 'Smart contract development and on-chain architecture.', weekCount: 8, courseIds: ['crs1', 'crs2', 'crs4'], cohortIds: ['c05', 'c06', 'c07'], createdAt: '2024-01-01' },
+  { id: 'p2', name: 'Web3 Foundations', code: 'W3F-100', description: 'DApps, wallets, and the EVM for non-engineers.', weekCount: 6, courseIds: ['crs3'], cohortIds: ['c05'], createdAt: '2024-01-01' },
 ];
+
+export const MOCK_TEAMS: Team[] = [
+  { id: 't1', cohortId: 'c07', name: 'Team 1', memberIds: ['u10', 'u11', 'u12', 'u13'], memberNames: ['Learner 10', 'Learner 11', 'Learner 12', 'Learner 13'], createdAt: '2025-01-13' },
+  { id: 't2', cohortId: 'c07', name: 'Team 2', memberIds: ['u14', 'u15', 'u16', 'u17'], memberNames: ['Learner 14', 'Learner 15', 'Learner 16', 'Learner 17'], createdAt: '2025-01-13' },
+  { id: 't3', cohortId: 'c07', name: 'Team 3', memberIds: ['u18', 'u19', 'u20', 'u21'], memberNames: ['Learner 18', 'Learner 19', 'Learner 20', 'Learner 21'], createdAt: '2025-01-13' },
+  { id: 't4', cohortId: 'c07', name: 'Team 4', memberIds: ['u1', 'u2', 'u3', 'u4'], memberNames: ['Adaeze O.', 'Marcus B.', 'Priya N.', 'Tobi A.'], createdAt: '2025-01-13' },
+  { id: 't5', cohortId: 'c07', name: 'Team 5', memberIds: ['u5', 'u7', 'u22', 'u23'], memberNames: ['Ini E.', 'Zainab M.', 'Learner 22', 'Learner 23'], createdAt: '2025-01-13' },
+  { id: 't6', cohortId: 'c07', name: 'Team 6', memberIds: ['u24', 'u25', 'u26', 'u27'], memberNames: ['Learner 24', 'Learner 25', 'Learner 26', 'Learner 27'], createdAt: '2025-01-13' },
+  { id: 't7', cohortId: 'c07', name: 'Team 7', memberIds: ['u28', 'u29', 'u30', 'u31'], memberNames: ['Learner 28', 'Learner 29', 'Learner 30', 'Learner 31'], createdAt: '2025-01-13' },
+  { id: 't8', cohortId: 'c07', name: 'Team 8', memberIds: ['u32', 'u33', 'u34', 'u35'], memberNames: ['Learner 32', 'Learner 33', 'Learner 34', 'Learner 35'], createdAt: '2025-01-13' },
+  { id: 't9', cohortId: 'c07', name: 'Team 9', memberIds: ['u36', 'u37', 'u38', 'u39', 'u40'], memberNames: ['Learner 36', 'Learner 37', 'Learner 38', 'Learner 39', 'Learner 40'], createdAt: '2025-01-13' },
+];
+
+export const MOCK_ROSTER: RosterMember[] = [
+  { id: 'r1', cohortId: 'c07', userId: 'u1', userName: 'Adaeze O.', userEmail: 'adaeze@mgs.io', githubUsername: 'adaeze-o', teamId: 't4', teamName: 'Team 4', joinedAt: '2025-01-13', status: 'active' },
+  { id: 'r2', cohortId: 'c07', userId: 'u2', userName: 'Marcus B.', userEmail: 'marcus@mgs.io', githubUsername: 'marcus-b', teamId: 't4', teamName: 'Team 4', joinedAt: '2025-01-13', status: 'active' },
+  { id: 'r3', cohortId: 'c07', userId: 'u3', userName: 'Priya N.', userEmail: 'priya@mgs.io', githubUsername: 'priya-n', teamId: 't4', teamName: 'Team 4', joinedAt: '2025-01-13', status: 'active' },
+  { id: 'r4', cohortId: 'c07', userId: 'u4', userName: 'Tobi A.', userEmail: 'tobi@mgs.io', githubUsername: 'tobi-a', teamId: 't4', teamName: 'Team 4', joinedAt: '2025-01-13', status: 'active' },
+  { id: 'r5', cohortId: 'c07', userId: 'u5', userName: 'Ini E.', userEmail: 'ini@mgs.io', githubUsername: 'ini-e', teamId: 't5', teamName: 'Team 5', joinedAt: '2025-01-13', status: 'active' },
+  { id: 'r6', cohortId: 'c07', userId: 'u6', userName: 'Sam K.', userEmail: 'sam@mgs.io', githubUsername: 'sam-k', teamId: undefined, teamName: undefined, joinedAt: '2025-01-13', status: 'removed', removedAt: '2025-03-01' },
+  { id: 'r7', cohortId: 'c07', userId: 'u7', userName: 'Zainab M.', userEmail: 'zainab@mgs.io', githubUsername: 'zainab-m', teamId: 't5', teamName: 'Team 5', joinedAt: '2025-01-13', status: 'active' },
+  ...Array.from({ length: 34 }, (_, i) => ({
+    id: `r${8 + i}`,
+    cohortId: 'c07',
+    userId: `u${10 + i}`,
+    userName: `Learner ${10 + i}`,
+    userEmail: `learner${10 + i}@mgs.io`,
+    githubUsername: `learner-${10 + i}`,
+    teamId: `t${1 + (i % 9)}`,
+    teamName: `Team ${1 + (i % 9)}`,
+    joinedAt: '2025-01-13',
+    status: 'active' as const,
+  })),
+];
+
 
 export const MOCK_AGENT_CONFIGS: AgentConfig[] = [
   { agentId: 'manager', name: 'Manager', description: 'Owns task lifecycle: assigns, advances, flags, escalates.', enabled: true, autonomyLevel: 'autonomous', updatedAt: '2025-03-01T09:00:00Z', updatedBy: 'admin-1' },
@@ -101,3 +136,333 @@ export const MOCK_AUDIT_LOG: AuditLogEntry[] = [
   { id: 'al4', action: 'moderation.remove', targetId: 'm4', targetType: 'moderation', performedBy: 'admin-1', performedByName: 'Admin User', timestamp: '2025-03-09T12:00:00Z', detail: 'Post removed: off-topic/spam.' },
   { id: 'al5', action: 'course.published', targetId: 'crs1', targetType: 'course', performedBy: 'admin-1', performedByName: 'Admin User', timestamp: '2025-01-08T11:00:00Z', detail: 'Solidity Fundamentals approved and published.' },
 ];
+
+// ─── Part 5: Tasks ───────────────────────────────────────────────────────────
+// Seeded with realistic data for Cohort 07 (41 learners · 9 teams · Week 5 of 8).
+// Every task carries a full transition history — timestamped + attributed.
+// Matches the "board" card on the landing page: state ticks, team, status labels.
+
+export const MOCK_TASKS: Task[] = [
+  // ── ASSIGNED ─────────────────────────────────────────────────────────────
+  {
+    id: 'task-01',
+    title: 'Rate limiter',
+    description: 'Implement a Redis-backed rate limiter for the auth endpoints. Must handle per-user and per-endpoint limits with configurable thresholds.',
+    teamId: 't6',
+    teamName: 'Team 6',
+    cohortId: 'c07',
+    lessonId: 'crs1',
+    lessonTitle: 'Solidity Fundamentals',
+    state: 'Assigned',
+    priority: 'medium',
+    dueDate: '2025-03-24',
+    createdAt: '2025-03-10T09:00:00Z',
+    updatedAt: '2025-03-10T09:00:00Z',
+    transitions: [
+      { from: null, to: 'Assigned', at: '2025-03-10T09:00:00Z', by: 'manager', byName: 'Manager' },
+    ],
+  },
+  {
+    id: 'task-02',
+    title: 'Queue worker',
+    description: 'Build the background job processor for webhook events. Use BullMQ with Redis. Jobs must be idempotent and retry on failure with exponential backoff.',
+    teamId: 't7',
+    teamName: 'Team 7',
+    cohortId: 'c07',
+    state: 'Assigned',
+    priority: 'high',
+    dueDate: '2025-03-21',
+    createdAt: '2025-03-10T09:05:00Z',
+    updatedAt: '2025-03-10T09:05:00Z',
+    transitions: [
+      { from: null, to: 'Assigned', at: '2025-03-10T09:05:00Z', by: 'manager', byName: 'Manager' },
+    ],
+  },
+  {
+    id: 'task-03',
+    title: 'Notification service',
+    description: 'Implement push and in-app notifications for task state changes and manager flags. Store notification preferences per user.',
+    teamId: 't8',
+    teamName: 'Team 8',
+    cohortId: 'c07',
+    state: 'Assigned',
+    priority: 'low',
+    createdAt: '2025-03-10T09:10:00Z',
+    updatedAt: '2025-03-10T09:10:00Z',
+    transitions: [
+      { from: null, to: 'Assigned', at: '2025-03-10T09:10:00Z', by: 'system', byName: 'System' },
+    ],
+  },
+  {
+    id: 'task-04',
+    title: 'Certificate generator',
+    description: 'Auto-generate downloadable PDF certificates on cohort completion. Use a template with cohort name, learner name, and completion date.',
+    teamId: 't9',
+    teamName: 'Team 9',
+    cohortId: 'c07',
+    state: 'Assigned',
+    priority: 'medium',
+    dueDate: '2025-03-28',
+    createdAt: '2025-03-10T09:15:00Z',
+    updatedAt: '2025-03-10T09:15:00Z',
+    transitions: [
+      { from: null, to: 'Assigned', at: '2025-03-10T09:15:00Z', by: 'manager', byName: 'Manager' },
+    ],
+  },
+  {
+    id: 'task-05',
+    title: 'Onboarding flow',
+    description: 'Build the multi-step onboarding wizard for new learners joining a cohort via invite link.',
+    teamId: 't1',
+    teamName: 'Team 1',
+    cohortId: 'c07',
+    state: 'Assigned',
+    priority: 'medium',
+    createdAt: '2025-03-11T08:00:00Z',
+    updatedAt: '2025-03-11T08:00:00Z',
+    transitions: [
+      { from: null, to: 'Assigned', at: '2025-03-11T08:00:00Z', by: 'manager', byName: 'Manager' },
+    ],
+  },
+
+  // ── BRANCHED ─────────────────────────────────────────────────────────────
+  {
+    id: 'task-06',
+    title: 'Contribution matrix feed',
+    description: 'Wire the contribution matrix component to live data from the git integration service. Handle the "syncing" state when webhooks are in flight.',
+    teamId: 't2',
+    teamName: 'Team 2',
+    cohortId: 'c07',
+    lessonId: 'crs2',
+    lessonTitle: 'Smart Contract Security',
+    state: 'Branched',
+    priority: 'high',
+    dueDate: '2025-03-20',
+    createdAt: '2025-03-08T10:00:00Z',
+    updatedAt: '2025-03-09T14:30:00Z',
+    transitions: [
+      { from: null, to: 'Assigned', at: '2025-03-08T10:00:00Z', by: 'manager', byName: 'Manager' },
+      { from: 'Assigned', to: 'Branched', at: '2025-03-09T14:30:00Z', by: 'system', byName: 'System' },
+    ],
+  },
+  {
+    id: 'task-07',
+    title: 'Team formation UI',
+    description: 'Build the drag-and-drop team formation interface for instructors creating cohort teams.',
+    teamId: 't3',
+    teamName: 'Team 3',
+    cohortId: 'c07',
+    state: 'Branched',
+    priority: 'medium',
+    createdAt: '2025-03-09T09:00:00Z',
+    updatedAt: '2025-03-10T11:00:00Z',
+    transitions: [
+      { from: null, to: 'Assigned', at: '2025-03-09T09:00:00Z', by: 'manager', byName: 'Manager' },
+      { from: 'Assigned', to: 'Branched', at: '2025-03-10T11:00:00Z', by: 'system', byName: 'System' },
+    ],
+  },
+
+  // ── PUSHED ────────────────────────────────────────────────────────────────
+  {
+    id: 'task-08',
+    title: 'Request lifecycle',
+    description: 'Implement the full request-response lifecycle middleware stack: auth, rate limiting, CORS, security headers, and request logging.',
+    teamId: 't2',
+    teamName: 'Team 2',
+    cohortId: 'c07',
+    state: 'Pushed',
+    priority: 'high',
+    dueDate: '2025-03-18',
+    createdAt: '2025-03-05T09:00:00Z',
+    updatedAt: '2025-03-13T16:20:00Z',
+    transitions: [
+      { from: null, to: 'Assigned', at: '2025-03-05T09:00:00Z', by: 'manager', byName: 'Manager' },
+      { from: 'Assigned', to: 'Branched', at: '2025-03-06T10:15:00Z', by: 'system', byName: 'System' },
+      { from: 'Branched', to: 'Pushed', at: '2025-03-13T16:20:00Z', by: 'system', byName: 'System' },
+    ],
+  },
+  {
+    id: 'task-09',
+    title: 'Lesson progress tracker',
+    description: 'Track per-learner lesson progress with resume-from-last-position. Store video timestamp, scroll position for text, and completion flag.',
+    teamId: 't5',
+    teamName: 'Team 5',
+    cohortId: 'c07',
+    lessonId: 'crs1',
+    lessonTitle: 'Solidity Fundamentals',
+    state: 'Pushed',
+    priority: 'medium',
+    createdAt: '2025-03-06T09:00:00Z',
+    updatedAt: '2025-03-12T11:30:00Z',
+    transitions: [
+      { from: null, to: 'Assigned', at: '2025-03-06T09:00:00Z', by: 'manager', byName: 'Manager' },
+      { from: 'Assigned', to: 'Branched', at: '2025-03-07T14:00:00Z', by: 'system', byName: 'System' },
+      { from: 'Branched', to: 'Pushed', at: '2025-03-12T11:30:00Z', by: 'system', byName: 'System' },
+    ],
+  },
+
+  // ── IN REVIEW ─────────────────────────────────────────────────────────────
+  // This task is the one on the landing page's board card: "Auth service · in review · 3d"
+  {
+    id: 'task-10',
+    title: 'Auth service',
+    description: 'JWT authentication service with Google + GitHub OAuth. Includes email verification, password reset, role-based redirect, and session management. GitHub OAuth is required for commit attribution.',
+    teamId: 't4',
+    teamName: 'Team 4',
+    cohortId: 'c07',
+    lessonId: 'crs1',
+    lessonTitle: 'Solidity Fundamentals',
+    state: 'In Review',
+    priority: 'high',
+    dueDate: '2025-03-17',
+    createdAt: '2025-03-01T09:00:00Z',
+    updatedAt: '2025-03-10T08:45:00Z',
+    transitions: [
+      { from: null, to: 'Assigned', at: '2025-03-01T09:00:00Z', by: 'manager', byName: 'Manager' },
+      { from: 'Assigned', to: 'Branched', at: '2025-03-02T11:00:00Z', by: 'system', byName: 'System' },
+      { from: 'Branched', to: 'Pushed', at: '2025-03-07T17:30:00Z', by: 'u4', byName: 'Tobi A.' },
+      { from: 'Pushed', to: 'In Review', at: '2025-03-10T08:45:00Z', by: 'system', byName: 'System' },
+    ],
+  },
+  {
+    id: 'task-11',
+    title: 'Program CRUD',
+    description: 'Build instructor/admin CRUD for Programs — the reusable curriculum shells. Includes list, create, edit, and archive flows.',
+    teamId: 't1',
+    teamName: 'Team 1',
+    cohortId: 'c07',
+    state: 'In Review',
+    priority: 'medium',
+    dueDate: '2025-03-19',
+    createdAt: '2025-03-02T09:00:00Z',
+    updatedAt: '2025-03-12T10:15:00Z',
+    transitions: [
+      { from: null, to: 'Assigned', at: '2025-03-02T09:00:00Z', by: 'manager', byName: 'Manager' },
+      { from: 'Assigned', to: 'Branched', at: '2025-03-03T13:00:00Z', by: 'system', byName: 'System' },
+      { from: 'Branched', to: 'Pushed', at: '2025-03-10T09:30:00Z', by: 'system', byName: 'System' },
+      { from: 'Pushed', to: 'In Review', at: '2025-03-12T10:15:00Z', by: 'system', byName: 'System' },
+    ],
+  },
+  {
+    id: 'task-12',
+    title: 'Cohort week calculator',
+    description: 'Implement current-week computation from start date + today, correct across timezones. Must update automatically at week boundaries without a deployment.',
+    teamId: 't3',
+    teamName: 'Team 3',
+    cohortId: 'c07',
+    state: 'In Review',
+    priority: 'low',
+    createdAt: '2025-03-04T09:00:00Z',
+    updatedAt: '2025-03-13T14:00:00Z',
+    transitions: [
+      { from: null, to: 'Assigned', at: '2025-03-04T09:00:00Z', by: 'manager', byName: 'Manager' },
+      { from: 'Assigned', to: 'Branched', at: '2025-03-05T12:00:00Z', by: 'system', byName: 'System' },
+      { from: 'Branched', to: 'Pushed', at: '2025-03-11T15:00:00Z', by: 'system', byName: 'System' },
+      { from: 'Pushed', to: 'In Review', at: '2025-03-13T14:00:00Z', by: 'system', byName: 'System' },
+    ],
+  },
+
+  // ── CLOSED ────────────────────────────────────────────────────────────────
+  {
+    id: 'task-13',
+    title: 'Request lifecycle',
+    description: 'Design token system — translate PRODUCT-DIRECTION.md §3 color/type/space tokens into Tailwind theme extension.',
+    teamId: 't2',
+    teamName: 'Team 2',
+    cohortId: 'c07',
+    state: 'Closed',
+    priority: 'high',
+    createdAt: '2025-01-20T09:00:00Z',
+    updatedAt: '2025-02-01T11:00:00Z',
+    closedAt: '2025-02-01T11:00:00Z',
+    transitions: [
+      { from: null, to: 'Assigned', at: '2025-01-20T09:00:00Z', by: 'manager', byName: 'Manager' },
+      { from: 'Assigned', to: 'Branched', at: '2025-01-21T10:00:00Z', by: 'system', byName: 'System' },
+      { from: 'Branched', to: 'Pushed', at: '2025-01-28T16:00:00Z', by: 'system', byName: 'System' },
+      { from: 'Pushed', to: 'In Review', at: '2025-01-29T09:00:00Z', by: 'system', byName: 'System' },
+      { from: 'In Review', to: 'Closed', at: '2025-02-01T11:00:00Z', by: 'manager', byName: 'Manager' },
+    ],
+  },
+  {
+    id: 'task-14',
+    title: 'Landing page shell',
+    description: 'Corridor public landing page — all sections: hero, contribution matrix panel, flow strip, three screens, close section.',
+    teamId: 't1',
+    teamName: 'Team 1',
+    cohortId: 'c07',
+    state: 'Closed',
+    priority: 'high',
+    createdAt: '2025-01-20T09:00:00Z',
+    updatedAt: '2025-02-05T14:00:00Z',
+    closedAt: '2025-02-05T14:00:00Z',
+    transitions: [
+      { from: null, to: 'Assigned', at: '2025-01-20T09:00:00Z', by: 'manager', byName: 'Manager' },
+      { from: 'Assigned', to: 'Branched', at: '2025-01-22T11:00:00Z', by: 'system', byName: 'System' },
+      { from: 'Branched', to: 'Pushed', at: '2025-01-30T15:00:00Z', by: 'system', byName: 'System' },
+      { from: 'Pushed', to: 'In Review', at: '2025-02-01T10:00:00Z', by: 'system', byName: 'System' },
+      { from: 'In Review', to: 'Closed', at: '2025-02-05T14:00:00Z', by: 'u8', byName: 'Dr. Yemi F.' },
+    ],
+  },
+  {
+    id: 'task-15',
+    title: 'Navigation component',
+    description: 'Condensing nav bar — `max-width` shrinks from 1120px to 860px on scroll, gains backdrop blur and border.',
+    teamId: 't1',
+    teamName: 'Team 1',
+    cohortId: 'c07',
+    state: 'Closed',
+    priority: 'medium',
+    createdAt: '2025-01-22T09:00:00Z',
+    updatedAt: '2025-02-03T10:00:00Z',
+    closedAt: '2025-02-03T10:00:00Z',
+    transitions: [
+      { from: null, to: 'Assigned', at: '2025-01-22T09:00:00Z', by: 'manager', byName: 'Manager' },
+      { from: 'Assigned', to: 'Branched', at: '2025-01-23T10:00:00Z', by: 'system', byName: 'System' },
+      { from: 'Branched', to: 'Pushed', at: '2025-01-28T14:00:00Z', by: 'system', byName: 'System' },
+      { from: 'Pushed', to: 'In Review', at: '2025-01-30T09:00:00Z', by: 'system', byName: 'System' },
+      { from: 'In Review', to: 'Closed', at: '2025-02-03T10:00:00Z', by: 'manager', byName: 'Manager' },
+    ],
+  },
+  {
+    id: 'task-16',
+    title: 'Roster management',
+    description: 'Add and remove learners from a cohort roster. Soft-remove only — historical task and contribution records must be preserved.',
+    teamId: 't3',
+    teamName: 'Team 3',
+    cohortId: 'c07',
+    state: 'Closed',
+    priority: 'medium',
+    createdAt: '2025-02-03T09:00:00Z',
+    updatedAt: '2025-02-14T12:00:00Z',
+    closedAt: '2025-02-14T12:00:00Z',
+    transitions: [
+      { from: null, to: 'Assigned', at: '2025-02-03T09:00:00Z', by: 'manager', byName: 'Manager' },
+      { from: 'Assigned', to: 'Branched', at: '2025-02-04T11:00:00Z', by: 'system', byName: 'System' },
+      { from: 'Branched', to: 'Pushed', at: '2025-02-11T16:00:00Z', by: 'system', byName: 'System' },
+      { from: 'Pushed', to: 'In Review', at: '2025-02-12T09:30:00Z', by: 'system', byName: 'System' },
+      { from: 'In Review', to: 'Closed', at: '2025-02-14T12:00:00Z', by: 'u8', byName: 'Dr. Yemi F.' },
+    ],
+  },
+  // Extra tasks for pagination testing (enough to need "load more")
+  ...Array.from({ length: 12 }, (_, i) => ({
+    id: `task-extra-${i + 1}`,
+    title: `Archived task ${i + 1}`,
+    description: `Completed work item from week ${Math.floor(i / 3) + 1}.`,
+    teamId: `t${(i % 9) + 1}`,
+    teamName: `Team ${(i % 9) + 1}`,
+    cohortId: 'c07',
+    state: 'Closed' as const,
+    priority: 'low' as const,
+    createdAt: `2025-01-${String(20 + i).padStart(2, '0')}T09:00:00Z`,
+    updatedAt: `2025-02-${String(1 + i).padStart(2, '0')}T12:00:00Z`,
+    closedAt: `2025-02-${String(1 + i).padStart(2, '0')}T12:00:00Z`,
+    transitions: [
+      { from: null, to: 'Assigned' as const, at: `2025-01-${String(20 + i).padStart(2, '0')}T09:00:00Z`, by: 'manager', byName: 'Manager' },
+      { from: 'Assigned' as const, to: 'Branched' as const, at: `2025-01-${String(21 + i).padStart(2, '0')}T10:00:00Z`, by: 'system', byName: 'System' },
+      { from: 'Branched' as const, to: 'Pushed' as const, at: `2025-01-${String(25 + (i % 5)).padStart(2, '0')}T14:00:00Z`, by: 'system', byName: 'System' },
+      { from: 'Pushed' as const, to: 'In Review' as const, at: `2025-01-${String(27 + (i % 4)).padStart(2, '0')}T09:00:00Z`, by: 'system', byName: 'System' },
+      { from: 'In Review' as const, to: 'Closed' as const, at: `2025-02-${String(1 + i).padStart(2, '0')}T12:00:00Z`, by: 'manager', byName: 'Manager' },
+    ],
+  })),
+];
+
