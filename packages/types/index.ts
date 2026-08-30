@@ -338,100 +338,72 @@ export interface LessonProgress {
   notes: Note[];
 }
 
-export interface LoginRequest {
-  email: string;
-  password?: string;
-  provider?: 'credentials' | 'github' | 'google';
+export interface WalletLinkRequest {
+  address: string;
+  signature?: string;
+  chainId?: number;
 }
 
-export interface LoginResponse {
-  token: string;
-  user: User;
-}
-
-export interface RegisterRequest {
-  email: string;
-  password?: string;
-  name: string;
-  provider?: 'credentials' | 'github' | 'google';
-}
-
-export interface RegisterResponse {
-  token: string;
-  user: User;
-}
-
-export interface VerifyEmailRequest {
-  token: string;
-}
-
-export interface ResetPasswordRequest {
-  email: string;
-}
-
-export interface ResetPasswordConfirmRequest {
-  token: string;
-  newPassword: string;
-}
-
-export interface InviteAcceptRequest {
-  code: string;
-}
-
-export interface InviteAcceptResponse {
-  success: boolean;
-  cohortId: string;
-  enrollmentId: string;
-}
-
-// --- Part 13: Notifications, Discussion & Communication ---
-
-export type NotificationTrigger = 'task_state_change' | 'review_received' | 'deadline_approaching' | 'certificate_issued' | 'announcement_posted';
-
-export interface Notification {
-  id: string;
-  userId: string;
-  trigger: NotificationTrigger;
-  title: string;
-  message: string;
-  isRead: boolean;
-  link?: string;
-  createdAt: string;
-}
-
-export type ThreadScope = 'course' | 'cohort';
-
-export interface Thread {
-  id: string;
-  scopeType: ThreadScope;
-  scopeId: string;
-  title: string;
-  authorId: string;
-  authorName: string;
-  createdAt: string;
-  updatedAt: string;
-  postCount: number;
-}
-
-export interface Post {
-  id: string;
-  threadId: string;
-  authorId: string;
-  authorName: string;
-  content: string;
-  isAiAnswer: boolean;
-  isFlagged: boolean;
-  createdAt: string;
-}
-
-export interface Announcement {
+export interface DiscussionPost {
   id: string;
   courseId?: string;
   cohortId?: string;
   authorId: string;
   authorName: string;
+  authorAvatar?: string;
   title: string;
   content: string;
+  isFlagged: boolean;
+  createdAt: string;
+  commentCount: number;
+}
+
+export interface DiscussionComment {
+  id: string;
+  postId: string;
+  authorId: string;
+  authorName: string;
+  authorAvatar?: string;
+  content: string;
+  isAiGenerated: boolean;
   createdAt: string;
 }
+
+export interface Notification {
+  id: string;
+  userId: string;
+  type: 'review_ready' | 'task_assigned' | 'deadline_approaching' | 'certificate_issued' | 'announcement';
+  title: string;
+  message: string;
+  isRead: boolean;
+  linkUrl?: string;
+  createdAt: string;
+}
+
+export interface HealthStatus {
+  status: 'ok' | 'degraded' | 'error';
+  timestamp: string;
+  services: {
+    database: 'up' | 'down';
+    redis: 'up' | 'down';
+    aiService: 'up' | 'degraded' | 'down';
+  };
+}
+
+export interface ApiError {
+  error: {
+    code: string;
+    message: string;
+    details?: unknown;
+  };
+}
+
+export interface ApiResponse<T> {
+  data: T;
+  meta?: {
+    cursor?: string;
+    total?: number;
+  };
+}
+
 
