@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { RegisterRequest, RegisterResponse, User } from '@repo/types';
+import { RegisterRequest, RegisterResponse, User } from 'types';
 import { createUser, getUserByEmail } from '@/lib/auth-store';
 
 export async function POST(req: Request) {
@@ -10,7 +10,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: { code: 'BAD_REQUEST', message: 'Email and Name are required' } }, { status: 400 });
     }
 
-    if (getUserByEmail(body.email)) {
+    if (await getUserByEmail(body.email)) {
       return NextResponse.json({ error: { code: 'USER_EXISTS', message: 'A user with that email already exists.' } }, { status: 409 });
     }
 

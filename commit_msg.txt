@@ -1,0 +1,28 @@
+feat: full-stack migration to Prisma/SQLite, AI agents, webhooks, RBAC
+
+Phase 1: Database
+- Initialize packages/db with Prisma schema
+- SQLite for local dev (file:./dev.db)
+- Migrate API services from mock arrays to Prisma DB queries
+
+Phase 2: Authentication
+- Configure NextAuth with GitHub OAuth + Credentials providers
+- AuthGuard (session-token validation) and RolesGuard (RBAC) in apps/api
+- Admin routes protected with role-based access control
+
+Phase 3: Git Integration + Webhooks
+- Create apps/api/src/webhooks module
+- Push events -> Task state 'Pushed', track Contributions
+- PR open -> 'In Review', PR merge -> 'Closed' + composite score
+
+Phase 4: AI Services
+- Initialize apps/ai-service as Python/FastAPI with LangGraph graphs
+- Manager Agent + Tutor Agent with offline fallback mocks
+- AiModule in NestJS proxies requests to Python microservice
+
+Phase 5: Frontend Integration
+- Courses page fetches from live API
+- Cohorts page fetches from live API with POST cohort creation
+
+Phase 6: Testing
+- apps/api/test.js: automated E2E integration tests (all passing)

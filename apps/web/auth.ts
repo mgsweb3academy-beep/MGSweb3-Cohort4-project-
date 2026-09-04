@@ -60,11 +60,11 @@ export const config = {
       }
 
       if (token.email) {
-        const storedUser = getUserByEmail(token.email as string);
+        const storedUser = await getUserByEmail(token.email as string);
         if (storedUser) {
           token.role = storedUser.role;
           token.id = storedUser.id;
-          token.githubUsername = storedUser.githubUsername;
+          token.githubUsername = (storedUser as any).githubUsername;
           token.status = storedUser.status;
         }
       }
@@ -73,11 +73,11 @@ export const config = {
     },
     async session({ session, token }) {
       if (session.user) {
-        const storedUser = token.email ? getUserByEmail(token.email as string) : undefined;
+        const storedUser = token.email ? await getUserByEmail(token.email as string) : undefined;
         const role = storedUser?.role || (token.role as string) || 'student';
         (session.user as any).role = role;
         session.user.id = (storedUser?.id || token.id) as string;
-        (session.user as any).githubUsername = storedUser?.githubUsername || (token.githubUsername as string);
+        (session.user as any).githubUsername = (storedUser as any)?.githubUsername || (token.githubUsername as string);
         (session.user as any).status = storedUser?.status || (token.status as string);
       }
       return session;

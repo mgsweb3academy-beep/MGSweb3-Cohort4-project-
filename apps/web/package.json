@@ -15,7 +15,8 @@
     "react-dom": "19.2.4",
     "react-player": "^3.4.0",
     "types": "*",
-    "ui": "*"
+    "ui": "*",
+    "db": "*"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

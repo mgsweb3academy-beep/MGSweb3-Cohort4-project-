@@ -8,6 +8,8 @@ import { AdminModule } from './admin/admin.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { DiscussionsModule } from './discussions/discussions.module';
 import { AnnouncementsModule } from './announcements/announcements.module';
+import { WebhooksModule } from './webhooks/webhooks.module';
+import { AiModule } from './ai/ai.module';
 
 @Module({
   imports: [
@@ -20,6 +22,7 @@ import { AnnouncementsModule } from './announcements/announcements.module';
     NotificationsModule,
     DiscussionsModule,
     AnnouncementsModule,
+    WebhooksModule,
   ],
 })
 export class AppModule {}

@@ -46,16 +46,16 @@ export default async function CoursesPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {courses.map(course => (
+        {courses.map((course: any) => (
           <Card key={course.id} className="flex flex-col">
             <div className="flex justify-between items-start mb-4">
               <Badge variant={course.status === 'published' ? 'teal' : 'amber'}>
                 {course.status.replace('_', ' ')}
               </Badge>
-              <span className="mono text-dim">{course.lessonCount} Lessons</span>
+              <span className="mono text-dim">{course.lessons?.length || 0} Lessons</span>
             </div>
             <h3 className="text-xl font-display font-bold mb-2">{course.title}</h3>
-            <p className="text-dim text-sm mb-6 flex-grow">{course.programName} • {course.instructorName}</p>
+            <p className="text-dim text-sm mb-6 flex-grow">{course.program?.name || 'Unknown Program'} • {course.instructorName || 'Instructor'}</p>
             
             <Link href={`/courses/${course.id}`} className="block mt-auto">
               <Button className="w-full justify-center">View Course</Button>

@@ -7,7 +7,7 @@ export class LessonsController {
   constructor(private readonly lessonsService: LessonsService) {}
 
   @Get()
-  findAll(@Query('courseId') courseId?: string): Lesson[] {
+  async findAll(@Query('courseId') courseId?: string): Promise<Lesson[]> {
     if (courseId) {
       return this.lessonsService.findByCourseId(courseId);
     }
@@ -15,17 +15,17 @@ export class LessonsController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string): Lesson {
+  async findOne(@Param('id') id: string): Promise<Lesson> {
     return this.lessonsService.findOne(id);
   }
 
   @Post()
-  create(@Body() body: Omit<Lesson, 'id'>): Lesson {
+  async create(@Body() body: Omit<Lesson, 'id'>): Promise<Lesson> {
     return this.lessonsService.create(body);
   }
 
   @Put(':id')
-  update(@Param('id') id: string, @Body() body: Partial<Lesson>): Lesson {
+  async update(@Param('id') id: string, @Body() body: Partial<Lesson>): Promise<Lesson> {
     return this.lessonsService.update(id, body);
   }
 }

@@ -13,62 +13,80 @@ export default function CohortsListingPage() {
   const initialProgramId = searchParams.get('programId');
   const openScheduleModalParam = searchParams.get('schedule') === 'true';
 
-  const [cohorts, setCohorts] = useState<Cohort[]>(MOCK_COHORTS);
+  const [cohorts, setCohorts] = useState<Cohort[]>([]);
+  const [programs, setPrograms] = useState<any[]>([]);
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
 
   // Form state
-  const [programId, setProgramId] = useState(initialProgramId || MOCK_PROGRAMS[0]?.id || '');
+  const [programId, setProgramId] = useState(initialProgramId || '');
   const [cohortName, setCohortName] = useState('');
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [weekCount, setWeekCount] = useState<number>(8);
   const [instructorId, setInstructorId] = useState('u8');
 
   useEffect(() => {
+    fetch('http://localhost:3001/cohorts')
+      .then(res => res.json())
+      .then(data => setCohorts(data))
+      .catch(console.error);
+      
+    fetch('http://localhost:3001/programs')
+      .then(res => res.json())
+      .then(data => {
+        setPrograms(data);
+        if (data.length > 0 && !programId) {
+          setProgramId(initialProgramId || data[0].id);
+        }
+      })
+      .catch(console.error);
+  }, []);
+
+  useEffect(() => {
     if (openScheduleModalParam || initialProgramId) {
-      if (initialProgramId) {
+      if (initialProgramId && programs.length > 0) {
         setProgramId(initialProgramId);
-        const prog = MOCK_PROGRAMS.find((p) => p.id === initialProgramId);
+        const prog = programs.find((p) => p.id === initialProgramId);
         if (prog) {
-          setWeekCount(prog.weekCount);
+          setWeekCount(prog.weekCount || 8);
           setCohortName(`${prog.name} — Cohort 0${cohorts.length + 5}`);
         }
       }
       setIsScheduleOpen(true);
     }
-  }, [initialProgramId, openScheduleModalParam]);
+  }, [initialProgramId, openScheduleModalParam, programs]);
 
   // Handle program selection to pre-fill schedule weekCount
   const handleProgramSelect = (pId: string) => {
     setProgramId(pId);
-    const selectedProgram = MOCK_PROGRAMS.find((p) => p.id === pId);
+    const selectedProgram = programs.find((p) => p.id === pId);
     if (selectedProgram) {
-      setWeekCount(selectedProgram.weekCount); // Acceptance Criterion 1: Pre-fills schedule weekCount from Program default
+      setWeekCount(selectedProgram.weekCount || 8);
       setCohortName(`${selectedProgram.name} — Cohort 0${cohorts.length + 5}`);
     }
   };
 
-  const handleScheduleSubmit = (e: React.FormEvent) => {
+  const handleScheduleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const prog = MOCK_PROGRAMS.find((p) => p.id === programId);
-    const instructor = MOCK_USERS.find((u) => u.id === instructorId);
-
-    const newCohort: Cohort = {
-      id: `c${String(cohorts.length + 5).padStart(2, '0')}`,
-      name: cohortName || `${prog?.name || 'Program'} — Cohort 0${cohorts.length + 5}`,
-      programId,
-      programName: prog?.name || 'Backend Engineering',
-      instructorId,
-      instructorName: instructor?.name || 'Dr. Yemi F.',
-      startDate,
-      weekCount: Number(weekCount),
-      learnerCount: 0,
-      teamCount: 0,
-      status: 'upcoming',
-      completionRate: 0,
-    };
-
-    setCohorts([newCohort, ...cohorts]);
-    setIsScheduleOpen(false);
+    const prog = programs.find((p) => p.id === programId);
+    
+    const res = await fetch('http://localhost:3001/cohorts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: cohortName,
+        programId,
+        startDate,
+        weekCount: Number(weekCount),
+        instructorId,
+        instructorName: 'Dr. Yemi F.',
+      })
+    });
+    
+    if (res.ok) {
+      const newCohort = await res.json();
+      setCohorts([newCohort, ...cohorts]);
+      setIsScheduleOpen(false);
+    }
   };
 
   return (

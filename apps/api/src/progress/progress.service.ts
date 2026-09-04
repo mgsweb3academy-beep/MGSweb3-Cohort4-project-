@@ -1,55 +1,74 @@
-import { Injectable } from '@nestjs/common';
-import { LessonProgress, Bookmark, Note } from 'types';
-import { randomUUID } from 'crypto';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { prisma } from 'db';
 
 @Injectable()
 export class ProgressService {
-  private progressMap: Map<string, LessonProgress> = new Map();
+  async getProgress(lessonId: string, userId: string) {
+    let progress = await prisma.lessonProgress.findUnique({
+      where: {
+        userId_lessonId: {
+          userId,
+          lessonId,
+        },
+      },
+      include: {
+        bookmarks: true,
+        notes: true,
+      },
+    });
 
-  private getProgressKey(lessonId: string, userId: string): string {
-    return `${lessonId}-${userId}`;
-  }
-
-  getProgress(lessonId: string, userId: string): LessonProgress {
-    const key = this.getProgressKey(lessonId, userId);
-    if (!this.progressMap.has(key)) {
-      this.progressMap.set(key, {
-        lessonId,
-        userId,
-        lastPosition: 0,
-        isCompleted: false,
-        bookmarks: [],
-        notes: [],
+    if (!progress) {
+      progress = await prisma.lessonProgress.create({
+        data: {
+          userId,
+          lessonId,
+        },
+        include: {
+          bookmarks: true,
+          notes: true,
+        },
       });
     }
-    return this.progressMap.get(key)!;
-  }
-
-  updateProgress(lessonId: string, userId: string, lastPosition: number): LessonProgress {
-    const progress = this.getProgress(lessonId, userId);
-    progress.lastPosition = lastPosition;
     return progress;
   }
 
-  addBookmark(lessonId: string, userId: string, position: number, label: string): Bookmark {
-    const progress = this.getProgress(lessonId, userId);
-    const bookmark: Bookmark = {
-      id: `bm_${randomUUID()}`,
-      position,
-      label,
-    };
-    progress.bookmarks.push(bookmark);
-    return bookmark;
+  async updateProgress(lessonId: string, userId: string, lastPosition: number) {
+    return prisma.lessonProgress.update({
+      where: {
+        userId_lessonId: {
+          userId,
+          lessonId,
+        },
+      },
+      data: {
+        lastPosition,
+      },
+      include: {
+        bookmarks: true,
+        notes: true,
+      },
+    });
   }
 
-  addNote(lessonId: string, userId: string, position: number, content: string): Note {
-    const progress = this.getProgress(lessonId, userId);
-    const note: Note = {
-      id: `note_${randomUUID()}`,
-      position,
-      content,
-    };
-    progress.notes.push(note);
-    return note;
+  async addBookmark(lessonId: string, userId: string, position: number, label: string) {
+    const progress = await this.getProgress(lessonId, userId);
+    return prisma.bookmark.create({
+      data: {
+        lessonProgressId: progress.id,
+        position,
+        label,
+      },
+    });
+  }
+
+  async addNote(lessonId: string, userId: string, position: number, content: string) {
+    const progress = await this.getProgress(lessonId, userId);
+    return prisma.note.create({
+      data: {
+        lessonProgressId: progress.id,
+        position,
+        content,
+      },
+    });
   }
 }

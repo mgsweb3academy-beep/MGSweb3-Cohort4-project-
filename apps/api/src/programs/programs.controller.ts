@@ -7,29 +7,29 @@ export class ProgramsController {
   constructor(private readonly programsService: ProgramsService) {}
 
   @Get()
-  findAll(): Program[] {
+  async findAll() {
     return this.programsService.findAll();
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string): Program {
+  async findOne(@Param('id') id: string) {
     return this.programsService.findOne(id);
   }
 
   @Post()
-  create(
+  async create(
     @Body() body: { name: string; description: string; weekCount: number; code?: string }
-  ): Program {
+  ) {
     return this.programsService.create(body);
   }
 
   @Put(':id')
-  update(@Param('id') id: string, @Body() body: Partial<Program>): Program {
+  async update(@Param('id') id: string, @Body() body: any) {
     return this.programsService.update(id, body);
   }
 
   @Delete(':id')
-  delete(@Param('id') id: string): { success: boolean } {
+  async delete(@Param('id') id: string) {
     return this.programsService.delete(id);
   }
 }
