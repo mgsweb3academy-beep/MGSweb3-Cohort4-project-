@@ -4,10 +4,10 @@ import { acceptInvite, getInviteByCode } from '@/lib/auth-store';
 
 export async function POST(
   req: Request,
-  { params }: { params: { code: string } }
+  { params }: { params: Promise<{ code: string }> }
 ) {
   try {
-    const code = params.code;
+    const { code } = await params;
 
     if (!code) {
       return NextResponse.json({ error: { code: 'BAD_REQUEST', message: 'Code is required' } }, { status: 400 });
