@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useConvex } from 'convex/react';
@@ -10,7 +10,7 @@ import { MOCK_USERS } from '../../lib/mock-data';
 import { calculateCohortWeek } from '../../lib/cohort-utils';
 import type { Cohort } from '../../lib/types';
 
-export default function CohortsListingPage() {
+function CohortsContent() {
   const convex = useConvex();
   const searchParams = useSearchParams();
   const initialProgramId = searchParams.get('programId');
@@ -264,5 +264,13 @@ export default function CohortsListingPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function CohortsListingPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[var(--ink)] text-[var(--chalk)] p-8 flex justify-center items-center">Loading...</div>}>
+      <CohortsContent />
+    </Suspense>
   );
 }
