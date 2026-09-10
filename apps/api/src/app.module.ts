@@ -23,6 +23,7 @@ import { AiModule } from './ai/ai.module';
     DiscussionsModule,
     AnnouncementsModule,
     WebhooksModule,
+    AiModule,
   ],
 })
 export class AppModule {}

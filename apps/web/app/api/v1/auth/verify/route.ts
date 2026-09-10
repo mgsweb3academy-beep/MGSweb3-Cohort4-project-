@@ -7,7 +7,7 @@ export async function POST(req: Request) {
     const { email, token } = body;
 
     if (token) {
-      const success = verifyEmailToken(token);
+      const success = await verifyEmailToken(token);
       return NextResponse.json({ success });
     }
 
@@ -15,7 +15,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: { code: 'BAD_REQUEST', message: 'Email is required' } }, { status: 400 });
     }
 
-    const result = requestEmailVerification(email);
+    const result = await requestEmailVerification(email);
     return NextResponse.json({ success: !!result, token: result?.token });
   } catch {
     return NextResponse.json({ error: { code: 'BAD_REQUEST', message: 'Invalid request' } }, { status: 400 });

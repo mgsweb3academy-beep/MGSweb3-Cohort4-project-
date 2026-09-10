@@ -1,5 +1,6 @@
 import type { UserRole, UserStatus } from 'types';
 import { prisma } from 'db';
+import { hashPassword, verifyPassword as verifyPasswordHash } from './security/encryption';
 
 export async function createUser(input: {
   email: string;
@@ -9,14 +10,20 @@ export async function createUser(input: {
   githubUsername?: string;
   provider?: 'credentials' | 'github' | 'google';
 }) {
-  return prisma.user.create({
+  const user = await prisma.user.create({
     data: {
       email: input.email,
       name: input.name,
       role: input.role || 'student',
       status: 'active',
+      passwordHash: input.password ? await hashPassword(input.password) : null,
     }
   });
+  return {
+    ...user,
+    role: user.role as UserRole,
+    status: user.status as UserStatus,
+  };
 }
 
 export async function getUserByEmail(email: string) {
@@ -55,14 +62,14 @@ export async function updateUserStatus(id: string, status: UserStatus) {
   };
 }
 
-// Mocks for now to fix Next.js build
 export async function verifyPassword(email: string, password: string) {
   const user = await getUserByEmail(email);
-  if (!user) return null;
-  // TODO: Add proper password hashing/verification
-  return user;
+  if (!user?.passwordHash) return null;
+  const matches = await verifyPasswordHash(password, user.passwordHash);
+  return matches ? user : null;
 }
 
+// Mocks for now to fix Next.js build
 export async function requestEmailVerification(email: string) {
   return { token: 'mock_token', email };
 }
