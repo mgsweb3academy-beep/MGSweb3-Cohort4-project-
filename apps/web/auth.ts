@@ -54,12 +54,16 @@ export const config = {
       }
 
       if (token.email) {
-        const storedUser = await getUserByEmail(token.email as string);
-        if (storedUser) {
-          token.role = storedUser.role;
-          token.id = storedUser.id;
-          token.githubUsername = (storedUser as any).githubUsername;
-          token.status = storedUser.status;
+        try {
+          const storedUser = await getUserByEmail(token.email as string);
+          if (storedUser) {
+            token.role = storedUser.role;
+            token.id = storedUser.id;
+            token.githubUsername = (storedUser as any).githubUsername;
+            token.status = storedUser.status;
+          }
+        } catch (error) {
+          console.error('[auth] Failed to fetch user from Convex in jwt callback:', error);
         }
       }
 
@@ -67,12 +71,19 @@ export const config = {
     },
     async session({ session, token }) {
       if (session.user) {
-        const storedUser = token.email ? await getUserByEmail(token.email as string) : undefined;
-        const role = storedUser?.role || (token.role as string) || 'student';
-        (session.user as any).role = role;
-        session.user.id = (storedUser?.id || token.id) as string;
-        (session.user as any).githubUsername = (storedUser as any)?.githubUsername || (token.githubUsername as string);
-        (session.user as any).status = storedUser?.status || (token.status as string);
+        try {
+          const storedUser = token.email ? await getUserByEmail(token.email as string) : undefined;
+          const role = storedUser?.role || (token.role as string) || 'student';
+          (session.user as any).role = role;
+          session.user.id = (storedUser?.id || token.id) as string;
+          (session.user as any).githubUsername = (storedUser as any)?.githubUsername || (token.githubUsername as string);
+          (session.user as any).status = storedUser?.status || (token.status as string);
+        } catch (error) {
+          console.error('[auth] Failed to fetch user from Convex in session callback:', error);
+          (session.user as any).role = (token.role as string) || 'student';
+          session.user.id = token.id as string;
+          (session.user as any).githubUsername = token.githubUsername as string;
+        }
       }
       return session;
     },

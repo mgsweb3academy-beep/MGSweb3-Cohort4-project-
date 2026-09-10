@@ -9,6 +9,10 @@
     "react-dom": "^19.0.0",
     "react-player": "^3.4.0"
   },
+  "peerDependencies": {
+    "next": "*",
+    "next-auth": "*"
+  },
   "devDependencies": {
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
