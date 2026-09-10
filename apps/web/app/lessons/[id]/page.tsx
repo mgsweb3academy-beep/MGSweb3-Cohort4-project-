@@ -5,12 +5,12 @@ import { Lesson, LessonProgress } from 'types';
 import { Button, VideoPlayer, AudioPlayer, PdfViewer, MarkdownViewer, CodeSnippet } from 'ui';
 import Link from 'next/link';
 import { use } from 'react';
-
-// Client-side fetch since we need to track state dynamically
-const API_URL = 'http://localhost:3001';
+import { useConvex } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 
 export default function LessonPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const convex = useConvex();
   const [lesson, setLesson] = React.useState<Lesson | null>(null);
   const [progress, setProgress] = React.useState<LessonProgress | null>(null);
   const [loading, setLoading] = React.useState(true);
@@ -23,79 +23,45 @@ export default function LessonPage({ params }: { params: Promise<{ id: string }>
   React.useEffect(() => {
     const fetchData = async () => {
       try {
-        const [lessonRes, progressRes] = await Promise.all([
-          fetch(`${API_URL}/lessons/${id}`),
-          fetch(`${API_URL}/lessons/${id}/progress?userId=${userId}`)
+        const [lessonData, progressData] = await Promise.all([
+          convex.query(api.lessons.get, { id }),
+          convex.query(api.progress.get, { lessonId: id, userId }),
         ]);
 
-        if (lessonRes.ok) setLesson(await lessonRes.json());
-        else {
-          // Fallback
-          setLesson({ id, courseId: 'course_1', title: 'Sample Lesson', contentType: 'video', contentUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', order: 1 });
-        }
-
-        if (progressRes.ok) {
-          const prog = await progressRes.json();
-          setProgress(prog);
-          setCurrentPosition(prog.lastPosition || 0);
-        } else {
-          setProgress({ lessonId: id, userId, lastPosition: 0, isCompleted: false, bookmarks: [], notes: [] });
-        }
+        setLesson(lessonData as Lesson | null);
+        setProgress(progressData as LessonProgress);
+        setCurrentPosition(progressData.lastPosition || 0);
       } catch (err) {
-        setLesson({ id, courseId: 'course_1', title: 'Sample Lesson (Mock)', contentType: 'video', contentUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', order: 1 });
-        setProgress({ lessonId: id, userId, lastPosition: 0, isCompleted: false, bookmarks: [], notes: [] });
+        console.error('Failed to load lesson', err);
       } finally {
         setLoading(false);
       }
     };
     fetchData();
-  }, [id]);
+  }, [convex, id]);
 
   const handleProgress = (pos: number) => {
     setCurrentPosition(pos);
     // Debounced or periodic save would go here
-    // fetch(`${API_URL}/lessons/${id}/progress?userId=${userId}`, {
-    //   method: 'PUT',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({ lastPosition: pos })
-    // });
   };
 
   const saveProgress = async () => {
-    await fetch(`${API_URL}/lessons/${id}/progress?userId=${userId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ lastPosition: currentPosition })
-    });
+    await convex.mutation(api.progress.savePosition, { lessonId: id, userId, lastPosition: currentPosition });
     alert('Progress saved!');
   };
 
   const addNote = async () => {
     if (!noteInput.trim()) return;
-    const res = await fetch(`${API_URL}/lessons/${id}/progress/notes?userId=${userId}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ position: currentPosition, content: noteInput })
-    });
-    if (res.ok) {
-      const newNote = await res.json();
-      setProgress(p => p ? { ...p, notes: [...p.notes, newNote] } : null);
-      setNoteInput('');
-    }
+    const newNote = await convex.mutation(api.progress.addNote, { lessonId: id, userId, position: currentPosition, content: noteInput });
+    setProgress(p => p ? { ...p, notes: [...p.notes, newNote] } as LessonProgress : null);
+    setNoteInput('');
   };
 
   const addBookmark = async () => {
     const label = prompt('Bookmark label:');
     if (!label) return;
-    const res = await fetch(`${API_URL}/lessons/${id}/progress/bookmarks?userId=${userId}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ position: currentPosition, label })
-    });
-    if (res.ok) {
-      const newBm = await res.json();
-      setProgress(p => p ? { ...p, bookmarks: [...p.bookmarks, newBm] } : null);
-    }
+    const newBm = await convex.mutation(api.progress.addBookmark, { lessonId: id, userId, position: currentPosition, label });
+    setProgress(p => p ? { ...p, bookmarks: [...p.bookmarks, newBm] } as LessonProgress : null);
   };
 
   if (loading) return <div className="wrap py-12 text-chalk">Loading...</div>;
@@ -117,7 +83,7 @@ export default function LessonPage({ params }: { params: Promise<{ id: string }>
             <Button size="sm" onClick={addBookmark}>Bookmark Here</Button>
           </div>
         </div>
-        
+
         <div className="p-6 max-w-4xl mx-auto">
           {lesson.contentType === 'video' && <VideoPlayer url={lesson.contentUrl!} onProgress={handleProgress} startPosition={progress?.lastPosition} />}
           {lesson.contentType === 'audio' && <AudioPlayer url={lesson.contentUrl!} onProgress={handleProgress} startPosition={progress?.lastPosition} />}
@@ -130,13 +96,13 @@ export default function LessonPage({ params }: { params: Promise<{ id: string }>
       {/* Sidebar (Notes & Bookmarks) */}
       <aside className="w-80 border-l border-line bg-ink-2 flex flex-col h-full shrink-0">
         <div className="flex border-b border-line text-sm font-display">
-          <button 
+          <button
             className={`flex-1 py-3 text-center border-b-2 transition-colors ${activeTab === 'notes' ? 'border-signal text-signal' : 'border-transparent text-dim hover:text-chalk'}`}
             onClick={() => setActiveTab('notes')}
           >
             Notes
           </button>
-          <button 
+          <button
             className={`flex-1 py-3 text-center border-b-2 transition-colors ${activeTab === 'bookmarks' ? 'border-signal text-signal' : 'border-transparent text-dim hover:text-chalk'}`}
             onClick={() => setActiveTab('bookmarks')}
           >
@@ -156,9 +122,9 @@ export default function LessonPage({ params }: { params: Promise<{ id: string }>
                 ))}
               </div>
               <div className="mt-auto">
-                <textarea 
-                  className="w-full bg-ink border border-line rounded p-2 text-sm text-chalk resize-none focus:border-signal outline-none" 
-                  rows={3} 
+                <textarea
+                  className="w-full bg-ink border border-line rounded p-2 text-sm text-chalk resize-none focus:border-signal outline-none"
+                  rows={3}
                   placeholder="Add a note..."
                   value={noteInput}
                   onChange={e => setNoteInput(e.target.value)}

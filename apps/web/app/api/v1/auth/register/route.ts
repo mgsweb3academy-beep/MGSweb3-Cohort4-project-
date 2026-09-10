@@ -28,13 +28,17 @@ export async function POST(req: Request) {
       provider: 'credentials',
     });
 
+    if (!userRecord) {
+      return NextResponse.json({ error: { code: 'USER_EXISTS', message: 'A user with that email already exists.' } }, { status: 409 });
+    }
+
     const user: User = {
       id: userRecord.id,
-      name: userRecord.name ?? body.name,
-      email: userRecord.email ?? body.email,
+      name: userRecord.name,
+      email: userRecord.email,
       role: userRecord.role,
       status: userRecord.status,
-      joinedAt: userRecord.createdAt.toISOString(),
+      joinedAt: userRecord.joinedAt,
       cohortIds: [],
     };
 

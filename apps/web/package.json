@@ -9,14 +9,15 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "convex": "^1.45.0",
+    "db": "*",
     "next": "16.2.12",
     "next-auth": "^5.0.0-beta.32",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-player": "^3.4.0",
     "types": "*",
-    "ui": "*",
-    "db": "*"
+    "ui": "*"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

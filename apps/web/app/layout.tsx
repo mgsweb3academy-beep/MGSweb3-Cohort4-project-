@@ -4,6 +4,7 @@ import {
   IBM_Plex_Sans,
   IBM_Plex_Mono,
 } from 'next/font/google';
+import { ConvexClientProvider } from './ConvexClientProvider';
 import './globals.css';
 
 const bricolage = Bricolage_Grotesque({
@@ -46,7 +47,7 @@ export default function RootLayout({
           fontFamily: 'var(--font-ibm-plex-sans), ui-sans-serif, system-ui, sans-serif',
         }}
       >
-        {children}
+        <ConvexClientProvider>{children}</ConvexClientProvider>
       </body>
     </html>
   );

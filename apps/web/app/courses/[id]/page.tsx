@@ -1,46 +1,16 @@
 import { Course, Lesson } from 'types';
 import { Card, Badge, Button } from 'ui';
 import Link from 'next/link';
+import { revalidatePath } from 'next/cache';
+import { fetchMutation, fetchQuery } from 'convex/nextjs';
+import { api } from '@/convex/_generated/api';
 
-async function getCourse(id: string): Promise<Course | null> {
-  try {
-    const res = await fetch(`http://localhost:3001/courses/${id}`, { cache: 'no-store' });
-    if (!res.ok) return null;
-    return res.json();
-  } catch {
-    // Mock data fallback
-    return {
-      id: 'course_1',
-      title: 'Introduction to Web3',
-      programId: 'prog_abc',
-      programName: 'Web3 Foundations',
-      instructorId: 'inst_1',
-      instructorName: 'Alice',
-      status: 'draft',
-      lessonCount: 5,
-      enrollmentCount: 120,
-    };
-  }
-}
+export const dynamic = 'force-dynamic';
 
-async function getLessons(courseId: string): Promise<Lesson[]> {
-  try {
-    const res = await fetch(`http://localhost:3001/lessons?courseId=${courseId}`, { cache: 'no-store' });
-    if (!res.ok) return [];
-    return res.json();
-  } catch {
-    // Mock data fallback
-    return [
-      { id: 'lesson_1', courseId, title: 'What is a Blockchain?', contentType: 'video', order: 1 },
-      { id: 'lesson_2', courseId, title: 'Blockchain Whitepaper', contentType: 'pdf', order: 2 },
-    ];
-  }
-}
-
-export default async function CourseDetailPage({ params }: { params: { id: string } }) {
+export default async function CourseDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const course = await getCourse(id);
-  const lessons = await getLessons(id);
+  const course = (await fetchQuery(api.courses.get, { id })) as Course | null;
+  const lessons = (await fetchQuery(api.lessons.listByCourse, { courseId: id })) as Lesson[];
 
   if (!course) {
     return <div className="wrap py-12 text-chalk">Course not found</div>;
@@ -51,7 +21,7 @@ export default async function CourseDetailPage({ params }: { params: { id: strin
       <Link href="/courses" className="text-dim hover:text-chalk mb-6 inline-block text-sm flex items-center gap-2">
         &larr; Back to Courses
       </Link>
-      
+
       <div className="flex items-start justify-between mb-12 border-b border-line pb-8">
         <div>
           <Badge variant={course.status === 'published' ? 'teal' : 'amber'} className="mb-4">
@@ -60,7 +30,7 @@ export default async function CourseDetailPage({ params }: { params: { id: strin
           <h1 className="text-4xl font-display font-bold mb-2">{course.title}</h1>
           <p className="text-dim">{course.programName} • {course.instructorName}</p>
         </div>
-        
+
         {course.status === 'draft' && (
           <div className="flex gap-4">
             <Link href={`/courses/${id}/edit`}>
@@ -68,7 +38,8 @@ export default async function CourseDetailPage({ params }: { params: { id: strin
             </Link>
             <form action={async () => {
               'use server';
-              await fetch(`http://localhost:3001/courses/${id}/request-review`, { method: 'POST' });
+              await fetchMutation(api.courses.setStatus, { id, status: 'in_review' });
+              revalidatePath(`/courses/${id}`);
             }}>
               <Button type="submit" variant="solid">Request Review</Button>
             </form>

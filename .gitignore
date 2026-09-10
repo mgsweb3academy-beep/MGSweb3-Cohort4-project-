@@ -11,3 +11,6 @@ Thumbs.db
 # Python
 __pycache__/
 .venv/
+
+# Vercel
+.vercel/
