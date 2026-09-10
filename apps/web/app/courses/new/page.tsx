@@ -2,11 +2,14 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
+import { useMutation } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 import { Button } from 'ui';
 import Link from 'next/link';
 
 export default function NewCoursePage() {
   const router = useRouter();
+  const createCourse = useMutation(api.courses.create);
   const [title, setTitle] = React.useState('');
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
@@ -16,20 +19,12 @@ export default function NewCoursePage() {
 
     setIsSubmitting(true);
     try {
-      const res = await fetch('http://localhost:3001/courses', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title }),
-      });
-      if (res.ok) {
-        router.push('/courses');
-        router.refresh();
-      } else {
-        alert('Failed to create course.');
-      }
+      await createCourse({ title });
+      router.push('/courses');
+      router.refresh();
     } catch (err) {
       console.error(err);
-      alert('Failed to create course. Ensure API is running.');
+      alert('Failed to create course.');
     } finally {
       setIsSubmitting(false);
     }

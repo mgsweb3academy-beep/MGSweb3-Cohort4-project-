@@ -15,6 +15,7 @@ model User {
   image         String?
   role          String    @default("student") // student, instructor, admin
   status        String    @default("active") // active, suspended
+  passwordHash  String?   // PBKDF2 hash; null for OAuth-only accounts
 
   accounts      Account[]
   sessions      Session[]

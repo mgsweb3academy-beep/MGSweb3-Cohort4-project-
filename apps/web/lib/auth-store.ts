@@ -1,6 +1,21 @@
 import type { UserRole, UserStatus } from 'types';
-import { prisma } from 'db';
+import { ConvexHttpClient } from 'convex/browser';
+import { api } from '@/convex/_generated/api';
 
+const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+
+type StoredUser = {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  status: UserStatus;
+  githubUsername?: string;
+  joinedAt: string;
+  cohortIds: string[];
+};
+
+// Returns null when the email is already registered.
 export async function createUser(input: {
   email: string;
   password?: string;
@@ -9,60 +24,33 @@ export async function createUser(input: {
   githubUsername?: string;
   provider?: 'credentials' | 'github' | 'google';
 }) {
-  return prisma.user.create({
-    data: {
-      email: input.email,
-      name: input.name,
-      role: input.role || 'student',
-      status: 'active',
-    }
+  const user = await convex.action(api.authNode.register, {
+    email: input.email,
+    name: input.name,
+    password: input.password ?? '',
   });
+  return user as StoredUser | null;
 }
 
 export async function getUserByEmail(email: string) {
-  const user = await prisma.user.findUnique({
-    where: { email },
-  });
-  if (!user) return null;
-  return {
-    ...user,
-    role: user.role as UserRole,
-    status: user.status as UserStatus,
-  };
+  const user = await convex.query(api.users.getByEmail, { email });
+  return user as StoredUser | null;
 }
 
 export async function updateUserRole(id: string, role: UserRole) {
-  const user = await prisma.user.update({
-    where: { id },
-    data: { role },
-  });
-  return {
-    ...user,
-    role: user.role as UserRole,
-    status: user.status as UserStatus,
-  };
+  await convex.mutation(api.users.setRole, { id, role: role as 'student' | 'instructor' | 'admin' });
 }
 
 export async function updateUserStatus(id: string, status: UserStatus) {
-  const user = await prisma.user.update({
-    where: { id },
-    data: { status },
-  });
-  return {
-    ...user,
-    role: user.role as UserRole,
-    status: user.status as UserStatus,
-  };
+  await convex.mutation(api.users.setStatus, { id, status: status as 'active' | 'suspended' });
+}
+
+export async function verifyPassword(email: string, password: string) {
+  const user = await convex.action(api.authNode.verifyCredentials, { email, password });
+  return user as StoredUser | null;
 }
 
 // Mocks for now to fix Next.js build
-export async function verifyPassword(email: string, password: string) {
-  const user = await getUserByEmail(email);
-  if (!user) return null;
-  // TODO: Add proper password hashing/verification
-  return user;
-}
-
 export async function requestEmailVerification(email: string) {
   return { token: 'mock_token', email };
 }

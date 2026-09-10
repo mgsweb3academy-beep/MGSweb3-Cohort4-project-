@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { verifyPassword, getUserByEmail } from '@/lib/auth-store';
+import { verifyPassword } from '@/lib/auth-store';
 
 export async function POST(req: Request) {
   try {
@@ -12,12 +12,11 @@ export async function POST(req: Request) {
 
     const user = await verifyPassword(email, password);
     if (!user) {
-      const existing = await getUserByEmail(email);
-      if (existing?.status === 'suspended') {
-        return NextResponse.json({ error: { code: 'ACCOUNT_SUSPENDED', message: 'This account has been suspended.' } }, { status: 403 });
-      }
-
       return NextResponse.json({ error: { code: 'INVALID_CREDENTIALS', message: 'Invalid credentials.' } }, { status: 401 });
+    }
+
+    if (user.status === 'suspended') {
+      return NextResponse.json({ error: { code: 'ACCOUNT_SUSPENDED', message: 'This account has been suspended.' } }, { status: 403 });
     }
 
     return NextResponse.json({

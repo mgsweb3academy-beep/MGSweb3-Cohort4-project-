@@ -3,12 +3,15 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { useConvex } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 import { Nav, Button, Card, StatusPill } from '@packages/ui';
-import { MOCK_COHORTS, MOCK_PROGRAMS, MOCK_USERS } from '../../lib/mock-data';
+import { MOCK_USERS } from '../../lib/mock-data';
 import { calculateCohortWeek } from '../../lib/cohort-utils';
 import type { Cohort } from '../../lib/types';
 
 export default function CohortsListingPage() {
+  const convex = useConvex();
   const searchParams = useSearchParams();
   const initialProgramId = searchParams.get('programId');
   const openScheduleModalParam = searchParams.get('schedule') === 'true';
@@ -25,13 +28,11 @@ export default function CohortsListingPage() {
   const [instructorId, setInstructorId] = useState('u8');
 
   useEffect(() => {
-    fetch('http://localhost:3001/cohorts')
-      .then(res => res.json())
-      .then(data => setCohorts(data))
+    convex.query(api.cohorts.list, {})
+      .then(data => setCohorts(data as unknown as Cohort[]))
       .catch(console.error);
-      
-    fetch('http://localhost:3001/programs')
-      .then(res => res.json())
+
+    convex.query(api.programs.list, {})
       .then(data => {
         setPrograms(data);
         if (data.length > 0 && !programId) {
@@ -39,7 +40,7 @@ export default function CohortsListingPage() {
         }
       })
       .catch(console.error);
-  }, []);
+  }, [convex]);
 
   useEffect(() => {
     if (openScheduleModalParam || initialProgramId) {
@@ -67,25 +68,23 @@ export default function CohortsListingPage() {
 
   const handleScheduleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const prog = programs.find((p) => p.id === programId);
-    
-    const res = await fetch('http://localhost:3001/cohorts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+
+    try {
+      const newCohort = await convex.mutation(api.cohorts.create, {
         name: cohortName,
         programId,
         startDate,
         weekCount: Number(weekCount),
-        instructorId,
         instructorName: 'Dr. Yemi F.',
-      })
-    });
-    
-    if (res.ok) {
-      const newCohort = await res.json();
-      setCohorts([newCohort, ...cohorts]);
-      setIsScheduleOpen(false);
+      });
+
+      if (newCohort) {
+        setCohorts([newCohort as unknown as Cohort, ...cohorts]);
+        setIsScheduleOpen(false);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Failed to schedule cohort.');
     }
   };
 
@@ -182,7 +181,7 @@ export default function CohortsListingPage() {
                   onChange={(e) => handleProgramSelect(e.target.value)}
                   className="w-full bg-[var(--ink-3)] border border-[var(--line)] rounded-lg px-3 py-2 text-sm text-[var(--chalk)] focus:outline-none focus:border-[var(--signal)]"
                 >
-                  {MOCK_PROGRAMS.map((p) => (
+                  {programs.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name} ({p.weekCount} weeks default)
                     </option>

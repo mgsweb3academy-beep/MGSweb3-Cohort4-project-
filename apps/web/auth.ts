@@ -3,7 +3,7 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import GitHubProvider from 'next-auth/providers/github';
 import GoogleProvider from 'next-auth/providers/google';
 import type { NextAuthConfig } from 'next-auth';
-import { getUserByEmail, updateUserRole, updateUserStatus } from '@/lib/auth-store';
+import { getUserByEmail, verifyPassword } from '@/lib/auth-store';
 
 export const config = {
   secret: process.env.AUTH_SECRET || 'dev-corridor-secret',
@@ -34,19 +34,13 @@ export const config = {
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
-        // Build against the mock API contract as per PRD
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/v1/auth/login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(credentials),
-        });
-        
-        const data = await res.json();
-        
-        if (res.ok && data?.user) {
-          return data.user;
-        }
-        return null;
+        const email = typeof credentials?.email === 'string' ? credentials.email : '';
+        const password = typeof credentials?.password === 'string' ? credentials.password : '';
+        if (!email || !password) return null;
+
+        const user = await verifyPassword(email, password);
+        if (!user || user.status === 'suspended') return null;
+        return user;
       },
     }),
   ],

@@ -106,7 +106,10 @@ export class CohortsService {
   async getRoster(cohortId: string) {
     return prisma.enrollment.findMany({
       where: { cohortId },
-      include: { user: true, team: true }
+      include: {
+        user: { select: { id: true, name: true, email: true, image: true, role: true, status: true, createdAt: true } },
+        team: true,
+      }
     });
   }
 
@@ -140,7 +143,13 @@ export class CohortsService {
   async getTeams(cohortId: string) {
     return prisma.team.findMany({
       where: { cohortId },
-      include: { enrollments: { include: { user: true } } }
+      include: {
+        enrollments: {
+          include: {
+            user: { select: { id: true, name: true, email: true, image: true, role: true, status: true, createdAt: true } },
+          },
+        },
+      }
     });
   }
 

@@ -27,7 +27,7 @@ export function getSecurityHeaders(): Record<string, string> {
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com data:",
       "img-src 'self' data: https:",
-      "connect-src 'self' https://api.github.com http://localhost:3001",
+      "connect-src 'self' https://api.github.com https://*.convex.cloud wss://*.convex.cloud",
       "frame-ancestors 'none'",
     ].join('; '),
   };
