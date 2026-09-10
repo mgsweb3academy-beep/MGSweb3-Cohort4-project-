@@ -10,8 +10,8 @@ export const config = {
   trustHost: true,
   providers: [
     GitHubProvider({
-      clientId: process.env.GITHUB_ID,
-      clientSecret: process.env.GITHUB_SECRET,
+      clientId: process.env.GITHUB_ID || '',
+      clientSecret: process.env.GITHUB_SECRET || '',
       profile(profile) {
         return {
           id: profile.id.toString(),
@@ -24,8 +24,8 @@ export const config = {
       },
     }),
     GoogleProvider({
-      clientId: process.env.GOOGLE_ID,
-      clientSecret: process.env.GOOGLE_SECRET,
+      clientId: process.env.GOOGLE_ID || '',
+      clientSecret: process.env.GOOGLE_SECRET || '',
     }),
     CredentialsProvider({
       name: 'Credentials',
