@@ -2,7 +2,17 @@ import type { UserRole, UserStatus } from 'types';
 import { ConvexHttpClient } from 'convex/browser';
 import { api } from '@/convex/_generated/api';
 
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+let _convex: ConvexHttpClient | null = null;
+function getConvex() {
+  if (!_convex) {
+    const url = process.env.NEXT_PUBLIC_CONVEX_URL;
+    if (!url) {
+      throw new Error('NEXT_PUBLIC_CONVEX_URL is not set');
+    }
+    _convex = new ConvexHttpClient(url);
+  }
+  return _convex;
+}
 
 type StoredUser = {
   id: string;
@@ -24,7 +34,7 @@ export async function createUser(input: {
   githubUsername?: string;
   provider?: 'credentials' | 'github' | 'google';
 }) {
-  const user = await convex.action(api.authNode.register, {
+  const user = await getConvex().action(api.authNode.register, {
     email: input.email,
     name: input.name,
     password: input.password ?? '',
@@ -33,20 +43,20 @@ export async function createUser(input: {
 }
 
 export async function getUserByEmail(email: string) {
-  const user = await convex.query(api.users.getByEmail, { email });
+  const user = await getConvex().query(api.users.getByEmail, { email });
   return user as StoredUser | null;
 }
 
 export async function updateUserRole(id: string, role: UserRole) {
-  await convex.mutation(api.users.setRole, { id, role: role as 'student' | 'instructor' | 'admin' });
+  await getConvex().mutation(api.users.setRole, { id, role: role as 'student' | 'instructor' | 'admin' });
 }
 
 export async function updateUserStatus(id: string, status: UserStatus) {
-  await convex.mutation(api.users.setStatus, { id, status: status as 'active' | 'suspended' });
+  await getConvex().mutation(api.users.setStatus, { id, status: status as 'active' | 'suspended' });
 }
 
 export async function verifyPassword(email: string, password: string) {
-  const user = await convex.action(api.authNode.verifyCredentials, { email, password });
+  const user = await getConvex().action(api.authNode.verifyCredentials, { email, password });
   return user as StoredUser | null;
 }
 
