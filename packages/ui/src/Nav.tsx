@@ -44,6 +44,9 @@ export const Nav: React.FC<NavProps> = ({ currentPath }) => {
           <Link href="/programs" className={`hover:text-chalk transition-colors ${currentPath === '/programs' ? 'text-chalk font-semibold' : ''}`}>
             Programs
           </Link>
+          <Link href="/courses" className={`hover:text-chalk transition-colors ${currentPath === '/courses' ? 'text-chalk font-semibold' : ''}`}>
+            Courses
+          </Link>
           <Link href="/cohorts" className={`hover:text-chalk transition-colors ${currentPath === '/cohorts' ? 'text-chalk font-semibold' : ''}`}>
             Cohorts
           </Link>
