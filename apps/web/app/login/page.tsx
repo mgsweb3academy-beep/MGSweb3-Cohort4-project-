@@ -101,13 +101,8 @@ function LoginContent() {
           >
             GitHub
           </Button>
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full"
-            onClick={() => signIn('google', { callbackUrl })}
-          >
-            Google
+          <Button type="button" variant="outline" className="w-full" disabled>
+            Google (coming soon)
           </Button>
         </div>
 
