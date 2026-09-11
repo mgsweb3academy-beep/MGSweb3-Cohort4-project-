@@ -1,4 +1,6 @@
 @import "tailwindcss";
+/* Shared components live outside apps/web, so Tailwind must scan them explicitly. */
+@source "../../../packages/ui/src";
 
 /* ─── Corridor design tokens — PRODUCT-DIRECTION.md §3 ─── */
 :root {
@@ -85,6 +87,8 @@ a { color: inherit; text-decoration: none; }
 @keyframes rise {
   to { opacity: 1; filter: blur(0); transform: none; }
 }
+/* Contribution matrix cells fade in */
+@keyframes pop { to { opacity: 1; } }
 
 /* ─── Pulse dot ─── */
 .pulse {
