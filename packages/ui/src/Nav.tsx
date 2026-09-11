@@ -72,6 +72,8 @@ export const Nav: React.FC<NavProps> = ({ currentPath }) => {
                   <img
                     src={session.user.image}
                     alt=""
+                    width={20}
+                    height={20}
                     className="w-5 h-5 rounded-full"
                   />
                 ) : (
