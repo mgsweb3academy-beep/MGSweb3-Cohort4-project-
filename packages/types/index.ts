@@ -369,14 +369,59 @@ export interface DiscussionComment {
   createdAt: string;
 }
 
+export type NotificationTrigger =
+  | 'task_state_change'
+  | 'review_received'
+  | 'deadline_approaching'
+  | 'certificate_issued'
+  | 'announcement_posted';
+
 export interface Notification {
   id: string;
   userId: string;
-  type: 'review_ready' | 'task_assigned' | 'deadline_approaching' | 'certificate_issued' | 'announcement';
+  type?: 'review_ready' | 'task_assigned' | 'deadline_approaching' | 'certificate_issued' | 'announcement';
+  trigger?: NotificationTrigger;
   title: string;
   message: string;
   isRead: boolean;
   linkUrl?: string;
+  link?: string;
+  createdAt: string;
+}
+
+export type ThreadScope = 'course' | 'cohort' | 'general';
+
+export interface Thread {
+  id: string;
+  scopeType: ThreadScope;
+  scopeId: string;
+  title: string;
+  authorId: string;
+  authorName: string;
+  createdAt: string;
+  updatedAt: string;
+  postCount: number;
+}
+
+export interface Post {
+  id: string;
+  threadId: string;
+  content: string;
+  authorId: string;
+  authorName: string;
+  isAiAnswer: boolean;
+  isFlagged: boolean;
+  createdAt: string;
+}
+
+export interface Announcement {
+  id: string;
+  courseId?: string;
+  cohortId?: string;
+  authorId: string;
+  authorName: string;
+  title: string;
+  content: string;
   createdAt: string;
 }
 
