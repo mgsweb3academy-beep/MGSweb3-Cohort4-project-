@@ -1,0 +1,366 @@
+// apps/api/prisma/schema.prisma
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum UserRole {
+  student
+  instructor
+  admin
+}
+
+enum UserStatus {
+  active
+  suspended
+}
+
+enum CourseStatus {
+  draft
+  in_review
+  published
+  rejected
+}
+
+enum TaskState {
+  Assigned
+  Branched
+  Pushed
+  InReview
+  Closed
+}
+
+enum LessonContentType {
+  video
+  pdf
+  markdown
+  audio
+  code
+}
+
+enum AutonomyLevel {
+  suggest_only
+  autonomous
+}
+
+enum ModerationItemType {
+  discussion_post
+  ai_flagged_submission
+}
+
+enum ModerationAction {
+  dismiss
+  remove
+  warn
+  escalate
+}
+
+enum ModerationStatus {
+  pending
+  resolved
+}
+
+model User {
+  id               String       @id @default(uuid())
+  name             String
+  email            String       @unique
+  passwordHash     String?
+  role             UserRole     @default(student)
+  status           UserStatus   @default(active)
+  githubUsername   String?
+  avatarUrl        String?
+  walletAddress    String?      @unique
+  joinedAt         DateTime     @default(now())
+  suspendedAt      DateTime?
+  suspendedBy      String?
+  suspensionReason String?
+
+  cohortMemberships CohortMember[]
+  teamMemberships   TeamMember[]
+  coursesInstructed Course[]       @relation("CourseInstructor")
+  lessonProgresses  LessonProgress[]
+  contributions     Contribution[]
+  notifications     Notification[]
+  discussionPosts   DiscussionPost[]
+  discussionComments DiscussionComment[]
+
+  @@map("users")
+}
+
+model Program {
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  weekCount   Int      @default(8)
+  createdAt   DateTime @default(now())
+
+  cohorts Cohort[]
+  courses Course[]
+
+  @@map("programs")
+}
+
+model Cohort {
+  id           String   @id @default(uuid())
+  name         String
+  programId    String
+  instructorId String
+  startDate    DateTime
+  weekCount    Int      @default(8)
+  status       String   @default("upcoming") // upcoming, active, completed
+  createdAt    DateTime @default(now())
+
+  program      Program        @relation(fields: [programId], references: [id])
+  members      CohortMember[]
+  teams        Team[]
+  tasks        Task[]
+  contributions Contribution[]
+
+  @@map("cohorts")
+}
+
+model CohortMember {
+  id       String @id @default(uuid())
+  cohortId String
+  userId   String
+
+  cohort Cohort @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([cohortId, userId])
+  @@map("cohort_members")
+}
+
+model Team {
+  id        String   @id @default(uuid())
+  name      String
+  cohortId  String
+  createdAt DateTime @default(now())
+
+  cohort  Cohort       @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+  members TeamMember[]
+  tasks   Task[]
+
+  @@map("teams")
+}
+
+model TeamMember {
+  id     String @id @default(uuid())
+  teamId String
+  userId String
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, userId])
+  @@map("team_members")
+}
+
+model Course {
+  id              String       @id @default(uuid())
+  title           String
+  programId       String
+  instructorId    String
+  status          CourseStatus @default(draft)
+  submittedAt     DateTime?
+  reviewedAt      DateTime?
+  reviewedBy      String?
+  rejectionReason String?
+  publishedAt     DateTime?
+  createdAt       DateTime     @default(now())
+
+  program    Program  @relation(fields: [programId], references: [id])
+  instructor User     @relation("CourseInstructor", fields: [instructorId], references: [id])
+  lessons    Lesson[]
+
+  @@map("courses")
+}
+
+model Lesson {
+  id          String            @id @default(uuid())
+  courseId    String
+  title       String
+  contentType LessonContentType @default(markdown)
+  contentUrl  String?
+  textContent String?
+  order       Int               @default(1)
+
+  course     Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  progresses LessonProgress[]
+
+  @@map("lessons")
+}
+
+model LessonProgress {
+  id           String   @id @default(uuid())
+  lessonId     String
+  userId       String
+  lastPosition Int      @default(0)
+  isCompleted  Boolean  @default(false)
+  updatedAt    DateTime @updatedAt
+
+  lesson    Lesson     @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookmarks Bookmark[]
+  notes     Note[]
+
+  @@unique([lessonId, userId])
+  @@map("lesson_progresses")
+}
+
+model Bookmark {
+  id               String @id @default(uuid())
+  lessonProgressId String
+  position         Int
+  label            String
+
+  lessonProgress LessonProgress @relation(fields: [lessonProgressId], references: [id], onDelete: Cascade)
+
+  @@map("bookmarks")
+}
+
+model Note {
+  id               String @id @default(uuid())
+  lessonProgressId String
+  position         Int
+  content          String
+
+  lessonProgress LessonProgress @relation(fields: [lessonProgressId], references: [id], onDelete: Cascade)
+
+  @@map("notes")
+}
+
+model Task {
+  id        String    @id @default(uuid())
+  title     String
+  teamId    String
+  cohortId  String
+  state     TaskState @default(Assigned)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  closedAt  DateTime?
+
+  team   Team   @relation(fields: [teamId], references: [id])
+  cohort Cohort @relation(fields: [cohortId], references: [id])
+
+  @@map("tasks")
+}
+
+model Contribution {
+  id             String   @id @default(uuid())
+  learnerId      String
+  taskId         String
+  cohortId       String
+  compositeScore Float    @default(0)
+  rawCommitCount Int      @default(0)
+  filesDistinct  Int      @default(0)
+  linesApproved  Int      @default(0)
+  reviewsGiven   Int      @default(0)
+  weekBreakdown  String   @default("[]") // JSON stringified array of numbers
+  createdAt      DateTime @default(now())
+
+  user   User   @relation(fields: [learnerId], references: [id])
+  cohort Cohort @relation(fields: [cohortId], references: [id])
+
+  @@map("contributions")
+}
+
+model AgentConfig {
+  agentId       String         @id
+  name          String
+  description   String
+  enabled       Boolean        @default(true)
+  autonomyLevel AutonomyLevel?
+  updatedAt     DateTime       @updatedAt
+  updatedBy     String
+
+  @@map("agent_configs")
+}
+
+model CourseAgentConfig {
+  courseId      String        @id
+  autonomyLevel AutonomyLevel @default(suggest_only)
+  updatedAt     DateTime      @updatedAt
+
+  @@map("course_agent_configs")
+}
+
+model ModerationItem {
+  id           String             @id @default(uuid())
+  type         ModerationItemType
+  flaggedAt    DateTime           @default(now())
+  flaggedBy    String
+  flagReason   String
+  content      String
+  authorId     String
+  authorName   String
+  contextLabel String
+  status       ModerationStatus   @default(pending)
+  resolution   ModerationAction?
+  resolvedAt   DateTime?
+  resolvedBy   String?
+
+  @@map("moderation_items")
+}
+
+model AuditLogEntry {
+  id              String   @id @default(uuid())
+  action          String
+  targetId        String
+  targetType      String
+  performedBy     String
+  performedByName String
+  timestamp       DateTime @default(now())
+  detail          String?
+
+  @@map("audit_log_entries")
+}
+
+model DiscussionPost {
+  id        String   @id @default(uuid())
+  courseId  String?
+  cohortId  String?
+  authorId  String
+  title     String
+  content   String
+  isFlagged Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  author   User                @relation(fields: [authorId], references: [id])
+  comments DiscussionComment[]
+
+  @@map("discussion_posts")
+}
+
+model DiscussionComment {
+  id            String   @id @default(uuid())
+  postId        String
+  authorId      String
+  content       String
+  isAiGenerated Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  post   DiscussionPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author User           @relation(fields: [authorId], references: [id])
+
+  @@map("discussion_comments")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  type      String
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  linkUrl   String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
