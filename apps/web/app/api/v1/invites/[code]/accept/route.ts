@@ -1,29 +1,29 @@
 import { NextResponse } from 'next/server';
-import { InviteAcceptResponse } from '@repo/types';
+import { InviteAcceptResponse } from 'types';
 import { acceptInvite, getInviteByCode } from '@/lib/auth-store';
 
 export async function POST(
   req: Request,
-  { params }: { params: { code: string } }
+  { params }: { params: Promise<{ code: string }> }
 ) {
   try {
-    const code = params.code;
+    const { code } = await params;
 
     if (!code) {
       return NextResponse.json({ error: { code: 'BAD_REQUEST', message: 'Code is required' } }, { status: 400 });
     }
 
-    const invite = getInviteByCode(code);
+    const invite = await getInviteByCode(code);
     if (!invite) {
       return NextResponse.json({ error: { code: 'INVITE_NOT_FOUND', message: 'Invite not found.' } }, { status: 404 });
     }
 
     const body = await req.json().catch(() => ({}));
     const userId = body?.userId ?? 'student1';
-    const response = acceptInvite(code, userId);
+    const response = await acceptInvite(code, userId);
 
     if (!response.success) {
-      return NextResponse.json({ error: { code: 'INVITE_REJECTED', message: response.error } }, { status: 403 });
+      return NextResponse.json({ error: { code: 'INVITE_REJECTED', message: 'Invite could not be accepted.' } }, { status: 403 });
     }
 
     const inviteResponse: InviteAcceptResponse = {

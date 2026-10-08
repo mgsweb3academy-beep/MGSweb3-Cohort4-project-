@@ -2,11 +2,11 @@ import * as React from 'react';
 import { Notification } from 'types';
 
 export const NotificationBell = ({
-  notifications,
+  notifications = [],
   onMarkAsRead,
 }: {
-  notifications: Notification[];
-  onMarkAsRead: (id: string) => void;
+  notifications?: Notification[];
+  onMarkAsRead?: (id: string) => void;
 }) => {
   const [open, setOpen] = React.useState(false);
   const unreadCount = notifications.filter((n) => !n.isRead).length;
@@ -65,7 +65,7 @@ export const NotificationBell = ({
                   <strong style={{ color: 'var(--chalk)', fontSize: '0.9rem' }}>{n.title}</strong>
                   {!n.isRead && (
                     <button
-                      onClick={() => onMarkAsRead(n.id)}
+                      onClick={() => onMarkAsRead?.(n.id)}
                       style={{ background: 'transparent', border: 'none', color: 'var(--signal)', fontSize: '0.72rem', cursor: 'pointer', padding: 0 }}
                     >
                       Mark Read

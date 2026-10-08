@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, Button, Input } from 'ui';
@@ -11,7 +11,7 @@ function getRoleRedirect(role: string) {
   return '/dashboard';
 }
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
@@ -101,13 +101,8 @@ export default function LoginPage() {
           >
             GitHub
           </Button>
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full"
-            onClick={() => signIn('google', { callbackUrl })}
-          >
-            Google
+          <Button type="button" variant="outline" className="w-full" disabled>
+            Google (coming soon)
           </Button>
         </div>
 
@@ -119,5 +114,13 @@ export default function LoginPage() {
         </p>
       </Card>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[var(--ink)] text-[var(--chalk)]">Loading...</div>}>
+      <LoginContent />
+    </Suspense>
   );
 }

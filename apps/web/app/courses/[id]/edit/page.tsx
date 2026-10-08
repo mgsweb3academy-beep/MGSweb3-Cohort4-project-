@@ -5,11 +5,12 @@ import { Course, Lesson, LessonContentType } from 'types';
 import { Card, Button, Badge } from 'ui';
 import Link from 'next/link';
 import { use } from 'react';
-
-const API_URL = 'http://localhost:3001';
+import { useConvex } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 
 export default function CourseEditPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const convex = useConvex();
   const [course, setCourse] = React.useState<Course | null>(null);
   const [lessons, setLessons] = React.useState<Lesson[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -25,17 +26,14 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
   React.useEffect(() => {
     const fetchData = async () => {
       try {
-        const [courseRes, lessonsRes] = await Promise.all([
-          fetch(`${API_URL}/courses/${id}`),
-          fetch(`${API_URL}/lessons?courseId=${id}`)
+        const [courseData, lessonData] = await Promise.all([
+          convex.query(api.courses.get, { id }),
+          convex.query(api.lessons.listByCourse, { courseId: id }),
         ]);
 
-        if (courseRes.ok) setCourse(await courseRes.json());
-        if (lessonsRes.ok) {
-          const l = await lessonsRes.json();
-          setLessons(l);
-          setOrder(l.length + 1);
-        }
+        setCourse(courseData as Course | null);
+        setLessons(lessonData as Lesson[]);
+        setOrder(lessonData.length + 1);
       } catch (err) {
         console.error('Failed to fetch course data for authoring', err);
       } finally {
@@ -43,7 +41,7 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
       }
     };
     fetchData();
-  }, [id]);
+  }, [convex, id]);
 
   const handleEditLesson = (lesson: Lesson) => {
     setEditingLessonId(lesson.id);
@@ -65,8 +63,7 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
 
   const handleSaveLesson = async (e: React.FormEvent) => {
     e.preventDefault();
-    const payload = {
-      courseId: id,
+    const fields = {
       title,
       contentType,
       contentUrl: contentUrl || undefined,
@@ -77,24 +74,14 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
     try {
       if (editingLessonId) {
         // Update
-        const res = await fetch(`${API_URL}/lessons/${editingLessonId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        if (res.ok) {
-          const updated = await res.json();
+        const updated = (await convex.mutation(api.lessons.update, { id: editingLessonId, ...fields })) as Lesson | null;
+        if (updated) {
           setLessons(lessons.map(l => l.id === updated.id ? updated : l));
         }
       } else {
         // Create
-        const res = await fetch(`${API_URL}/lessons`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        if (res.ok) {
-          const created = await res.json();
+        const created = (await convex.mutation(api.lessons.create, { courseId: id, ...fields })) as Lesson | null;
+        if (created) {
           setLessons([...lessons, created]);
         }
       }
@@ -112,7 +99,7 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
       <Link href={`/courses/${id}`} className="text-dim hover:text-chalk mb-6 inline-block text-sm">
         &larr; Back to Course View
       </Link>
-      
+
       <div className="flex items-start justify-between mb-8 border-b border-line pb-8">
         <div>
           <Badge variant="dim" className="mb-4">AUTHORING MODE</Badge>
@@ -154,9 +141,9 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
             <form onSubmit={handleSaveLesson} className="flex flex-col gap-4">
               <div>
                 <label className="block text-sm text-dim mb-1 font-mono">TITLE</label>
-                <input 
+                <input
                   required
-                  type="text" 
+                  type="text"
                   value={title}
                   onChange={e => setTitle(e.target.value)}
                   className="w-full bg-ink border border-line rounded p-2 text-chalk focus:border-signal outline-none"
@@ -167,7 +154,7 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm text-dim mb-1 font-mono">CONTENT TYPE</label>
-                  <select 
+                  <select
                     value={contentType}
                     onChange={e => setContentType(e.target.value as LessonContentType)}
                     className="w-full bg-ink border border-line rounded p-2 text-chalk focus:border-signal outline-none"
@@ -181,9 +168,9 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
                 </div>
                 <div>
                   <label className="block text-sm text-dim mb-1 font-mono">ORDER</label>
-                  <input 
+                  <input
                     required
-                    type="number" 
+                    type="number"
                     value={order}
                     onChange={e => setOrder(Number(e.target.value))}
                     className="w-full bg-ink border border-line rounded p-2 text-chalk focus:border-signal outline-none"
@@ -195,9 +182,9 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
               {['video', 'audio', 'pdf'].includes(contentType) && (
                 <div>
                   <label className="block text-sm text-dim mb-1 font-mono">MEDIA URL</label>
-                  <input 
+                  <input
                     required
-                    type="url" 
+                    type="url"
                     value={contentUrl}
                     onChange={e => setContentUrl(e.target.value)}
                     className="w-full bg-ink border border-line rounded p-2 text-chalk focus:border-signal outline-none"
@@ -209,7 +196,7 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
               {['markdown', 'code'].includes(contentType) && (
                 <div>
                   <label className="block text-sm text-dim mb-1 font-mono">TEXT CONTENT</label>
-                  <textarea 
+                  <textarea
                     required
                     value={textContent}
                     onChange={e => setTextContent(e.target.value)}

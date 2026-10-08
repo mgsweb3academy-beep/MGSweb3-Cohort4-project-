@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useConvex } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 import {
   MOCK_USERS,
   MOCK_COURSES,
@@ -335,10 +337,11 @@ function Toast({ message, onClose }: { message: string; onClose: () => void }) {
 // ─── §8.1 User Management ─────────────────────────────────────────────────────
 
 function UserManagement() {
-  const [users, setUsers] = useState<User[]>(MOCK_USERS);
+  const convex = useConvex();
+  const [users, setUsers] = useState<User[]>([]);
   useEffect(() => {
-    fetch('http://localhost:3001/admin/users').then(res => res.json()).then(setUsers);
-  }, []);
+    convex.query(api.users.list, {}).then(data => setUsers(data as User[])).catch(console.error);
+  }, [convex]);
   const [filter, setFilter] = useState('');
   const [roleFilter, setRoleFilter] = useState<UserRole | 'all'>('all');
   const [modal, setModal] = useState<'create' | 'suspend' | 'bulkinvite' | null>(null);
@@ -364,11 +367,7 @@ function UserManagement() {
 
   const suspend = async () => {
     if (!selectedUser || !suspensionReason.trim()) return;
-    await fetch(`http://localhost:3001/admin/users/${selectedUser.id}/suspend`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reason: suspensionReason })
-    });
+    await convex.mutation(api.users.setStatus, { id: selectedUser.id, status: 'suspended', reason: suspensionReason });
     setUsers(prev => prev.map(u =>
       u.id === selectedUser.id
         ? { ...u, status: 'suspended', suspendedAt: new Date().toISOString(), suspendedBy: 'admin-1', suspensionReason }
@@ -380,7 +379,7 @@ function UserManagement() {
   };
 
   const reinstate = async (user: User) => {
-    await fetch(`http://localhost:3001/admin/users/${user.id}/reinstate`, { method: 'PUT' });
+    await convex.mutation(api.users.setStatus, { id: user.id, status: 'active' });
     setUsers(prev => prev.map(u =>
       u.id === user.id ? { ...u, status: 'active', suspendedAt: undefined, suspendedBy: undefined, suspensionReason: undefined } : u
     ));
@@ -577,9 +576,6 @@ function UserManagement() {
 
 function TutorManagement() {
   const [instructors, setInstructors] = useState<InstructorPerformance[]>(MOCK_INSTRUCTOR_PERFORMANCE);
-  useEffect(() => {
-    fetch('http://localhost:3001/admin/tutors/performance').then(res => res.json()).then(setInstructors);
-  }, []);
   const [cohorts] = useState<Cohort[]>(MOCK_COHORTS);
   const [modal, setModal] = useState<'reassign' | null>(null);
   const [selected, setSelected] = useState<InstructorPerformance | null>(null);
@@ -678,10 +674,11 @@ function TutorManagement() {
 // ─── §8.3 Course Approval ────────────────────────────────────────────────────
 
 function CourseApproval() {
-  const [courses, setCourses] = useState<Course[]>(MOCK_COURSES);
+  const convex = useConvex();
+  const [courses, setCourses] = useState<Course[]>([]);
   useEffect(() => {
-    fetch('http://localhost:3001/admin/courses').then(res => res.json()).then(setCourses).catch(e => console.error(e));
-  }, []);
+    convex.query(api.courses.list, {}).then(data => setCourses(data as unknown as Course[])).catch(console.error);
+  }, [convex]);
   const [modal, setModal] = useState<'approve' | 'reject' | null>(null);
   const [selected, setSelected] = useState<Course | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
@@ -691,7 +688,7 @@ function CourseApproval() {
 
   const approve = async () => {
     if (!selected) return;
-    await fetch(`http://localhost:3001/admin/courses/${selected.id}/approve`, { method: 'PUT' });
+    await convex.mutation(api.courses.setStatus, { id: selected.id, status: 'published' });
     setCourses(prev => prev.map(c =>
       c.id === selected.id
         ? { ...c, status: 'published', reviewedAt: new Date().toISOString(), reviewedBy: 'admin-1', publishedAt: new Date().toISOString() }
@@ -703,11 +700,7 @@ function CourseApproval() {
 
   const reject = async () => {
     if (!selected || !rejectionReason.trim()) return;
-    await fetch(`http://localhost:3001/admin/courses/${selected.id}/reject`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reason: rejectionReason })
-    });
+    await convex.mutation(api.courses.setStatus, { id: selected.id, status: 'rejected', reason: rejectionReason });
     setCourses(prev => prev.map(c =>
       c.id === selected.id
         ? { ...c, status: 'rejected', reviewedAt: new Date().toISOString(), reviewedBy: 'admin-1', rejectionReason }
@@ -905,9 +898,6 @@ function Analytics() {
 
 function AgentConfiguration() {
   const [agents, setAgents] = useState<AgentConfig[]>(MOCK_AGENT_CONFIGS);
-  useEffect(() => {
-    fetch('http://localhost:3001/admin/agents').then(res => res.json()).then(setAgents);
-  }, []);
   const [toast, setToast] = useState('');
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3500); };
@@ -916,11 +906,6 @@ function AgentConfiguration() {
     const agent = agents.find(a => a.agentId === agentId);
     if (!agent) return;
     const newState = !agent.enabled;
-    await fetch(`http://localhost:3001/admin/agents/${agentId}/toggle`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ enabled: newState })
-    });
     setAgents(prev => prev.map(a =>
       a.agentId === agentId
         ? { ...a, enabled: newState, updatedAt: new Date().toISOString() }
@@ -1173,9 +1158,6 @@ function Reporting() {
 
 function ModerationQueue() {
   const [items, setItems] = useState<ModerationItem[]>(MOCK_MODERATION_ITEMS);
-  useEffect(() => {
-    fetch('http://localhost:3001/admin/moderation').then(res => res.json()).then(setItems);
-  }, []);
   const [modal, setModal] = useState<'action' | null>(null);
   const [selected, setSelected] = useState<ModerationItem | null>(null);
   const [pendingAction, setPendingAction] = useState<ModerationAction | null>(null);
@@ -1188,11 +1170,6 @@ function ModerationQueue() {
 
   const resolve = async (action: ModerationAction) => {
     if (!selected) return;
-    await fetch(`http://localhost:3001/admin/moderation/${selected.id}/resolve`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action })
-    });
     setItems(prev => prev.map(i =>
       i.id === selected.id
         ? { ...i, status: 'resolved', resolution: action, resolvedAt: new Date().toISOString(), resolvedBy: 'admin-1' }

@@ -12,7 +12,8 @@ import {
   StatusPill,
   Tick,
 } from 'ui';
-import { MOCK_COHORTS, MOCK_COURSES, MOCK_TASKS, MOCK_USERS } from '@/lib/mock-data';
+import { MOCK_COHORTS, MOCK_COURSES, MOCK_TASKS } from '@/lib/mock-data';
+import { useSession } from '@/lib/auth';
 
 type DashboardView = 'day-one' | 'week-eight';
 
@@ -23,9 +24,6 @@ type DashboardTask = {
   dueDate?: string;
   teamName?: string;
 };
-
-const studentName = 'Adaeze O.';
-const studentId = 'u1';
 
 const flowSteps = [
   { title: 'Assigned', description: 'The work is waiting for the team to begin.' },
@@ -48,8 +46,9 @@ export default function DashboardPage() {
   const [tutorAnswer, setTutorAnswer] = React.useState<string | null>(null);
   const [certificateStatus, setCertificateStatus] = React.useState('Ready when the cohort is complete.');
 
+  const { user } = useSession();
+  const studentName = user?.name || user?.email || 'You';
   const cohort = MOCK_COHORTS.find((item) => item.id === 'c07') ?? MOCK_COHORTS[0];
-  const user = MOCK_USERS.find((item) => item.id === studentId);
   const courses = MOCK_COURSES.slice(0, 3);
 
   const selectedData = React.useMemo(() => {
@@ -103,7 +102,7 @@ export default function DashboardPage() {
         message: 'Your certificate will appear here when the course and cohort are complete.',
       },
     };
-  }, [view]);
+  }, [view, studentName]);
 
   const handleDownloadCertificate = () => {
     if (!selectedData.certificate.available) {
@@ -147,7 +146,7 @@ export default function DashboardPage() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="font-mono text-[0.72rem] uppercase tracking-[0.12em] text-[var(--signal)]">Student dashboard</p>
-                <h1 className="text-3xl font-semibold">Welcome back, {user?.name ?? studentName}</h1>
+                <h1 className="text-3xl font-semibold">Welcome back{user ? `, ${studentName}` : ''}</h1>
                 <p className="mt-1 max-w-2xl text-[var(--dim)]">Your cohort work, task state, and contribution standing stay in one place.</p>
               </div>
               <div className="flex gap-2">

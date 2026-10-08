@@ -77,7 +77,7 @@ export default auth(async function middleware(request: NextRequest) {
 
   if (session?.user) {
     const email = session.user.email as string | undefined;
-    const storedUser = email ? getUserByEmail(email) : undefined;
+    const storedUser = email ? await getUserByEmail(email) : undefined;
 
     if (storedUser?.status === 'suspended') {
       return NextResponse.redirect(new URL('/login', request.url));

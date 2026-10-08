@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { verifyPassword, getUserByEmail } from '@/lib/auth-store';
+import { verifyPassword } from '@/lib/auth-store';
 
 export async function POST(req: Request) {
   try {
@@ -10,14 +10,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: { code: 'BAD_REQUEST', message: 'Email and password are required' } }, { status: 400 });
     }
 
-    const user = verifyPassword(email, password);
+    const user = await verifyPassword(email, password);
     if (!user) {
-      const existing = getUserByEmail(email);
-      if (existing?.status === 'suspended') {
-        return NextResponse.json({ error: { code: 'ACCOUNT_SUSPENDED', message: 'This account has been suspended.' } }, { status: 403 });
-      }
-
       return NextResponse.json({ error: { code: 'INVALID_CREDENTIALS', message: 'Invalid credentials.' } }, { status: 401 });
+    }
+
+    if (user.status === 'suspended') {
+      return NextResponse.json({ error: { code: 'ACCOUNT_SUSPENDED', message: 'This account has been suspended.' } }, { status: 403 });
     }
 
     return NextResponse.json({
@@ -28,8 +27,8 @@ export async function POST(req: Request) {
         email: user.email,
         role: user.role,
         status: user.status,
-        githubUsername: user.githubUsername,
-        cohortIds: user.cohortIds,
+        githubUsername: (user as any).githubUsername,
+        cohortIds: (user as any).cohortIds || [],
       },
     });
   } catch (error) {

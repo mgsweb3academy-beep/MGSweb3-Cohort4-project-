@@ -6,6 +6,12 @@ Corridor is a learning management system for **cohort-based technical programs**
 
 This repository contains the monorepo for the Corridor LMS platform.
 
+## Where the project stands
+
+[`launch-readiness.html`](launch-readiness.html) is a snapshot of the whole project measured against `main` at `00c2225`: the 33 items standing between this repo and a live deployment, in dependency order, each naming the file that proves it — plus who pushed what and the four PRD parts nobody owns yet.
+
+View it rendered: **[htmlpreview link](https://htmlpreview.github.io/?https://github.com/mgsweb3academy-beep/MGSweb3-Cohort4-project-/blob/main/launch-readiness.html)** — or clone the repo and open the file in a browser. Ticking items saves in your own browser only; it is not shared.
+
 ## Features (Admin Panel — Part 12)
 
 The current implementation includes a fully functional Admin Panel (`apps/web/app/admin`) that handles platform management:
