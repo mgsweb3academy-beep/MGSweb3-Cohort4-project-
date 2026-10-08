@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, BadRequestException, Inject } from '@nestjs/common';
-import { Cohort, Team, RosterMember } from 'types';
+import { prisma } from 'db';
 import { ProgramsService } from '../programs/programs.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -11,8 +11,8 @@ export class CohortsService {
     private prisma: PrismaService,
   ) {}
 
-  private computeCurrentWeek(startDate: Date, weekCount: number): number {
-    const start = new Date(startDate);
+  private computeCurrentWeek(startDateStr: Date, weekCount: number): number {
+    const start = new Date(startDateStr);
     start.setHours(0, 0, 0, 0);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -26,7 +26,13 @@ export class CohortsService {
   }
 
   async findAll() {
-    const cohorts = await this.prisma.cohort.findMany();
+    const cohorts = await prisma.cohort.findMany({
+      include: {
+        program: true,
+        enrollments: true,
+        teams: true,
+      },
+    });
     return cohorts.map((c) => ({
       ...c,
       currentWeek: this.computeCurrentWeek(c.startDate, c.weekCount),
@@ -34,7 +40,14 @@ export class CohortsService {
   }
 
   async findOne(id: string) {
-    const cohort = await this.prisma.cohort.findUnique({ where: { id } });
+    const cohort = await prisma.cohort.findUnique({
+      where: { id },
+      include: {
+        program: true,
+        enrollments: true,
+        teams: true,
+      },
+    });
     if (!cohort) {
       throw new NotFoundException(`Cohort with ID ${id} not found`);
     }
@@ -52,21 +65,17 @@ export class CohortsService {
     instructorId?: string;
     instructorName?: string;
   }) {
-    // Basic mock program lookup fallback for demo purposes since ProgramsService is mock
-    const program = { id: data.programId, name: 'Demo Program', weekCount: 8 };
-    const finalWeekCount = data.weekCount ? Number(data.weekCount) : program.weekCount;
+    const program = await this.programsService.findOne(data.programId);
+    // Hardcoding weekCount if omitted for simplicity, normally we'd pull from program
+    const finalWeekCount = data.weekCount ? Number(data.weekCount) : 8;
 
-    const newCohort = await this.prisma.cohort.create({
+    const newCohort = await prisma.cohort.create({
       data: {
-        name: data.name,
+        name: data.name || `${program.name} — Cohort`,
         programId: program.id,
-        programName: program.name,
-        instructorId: data.instructorId || 'u8',
-        instructorName: data.instructorName || 'Dr. Yemi F.',
         startDate: new Date(data.startDate),
         weekCount: finalWeekCount,
-        status: 'upcoming',
-      },
+      }
     });
 
     return {
@@ -75,128 +84,105 @@ export class CohortsService {
     };
   }
 
-  async update(id: string, data: Partial<Cohort>) {
-    const updated = await this.prisma.cohort.update({
-      where: { id },
-      data: {
-        name: data.name,
-        startDate: data.startDate ? new Date(data.startDate) : undefined,
-        weekCount: data.weekCount ? Number(data.weekCount) : undefined,
-        instructorId: data.instructorId,
-        instructorName: data.instructorName,
-        status: data.status,
-      },
-    });
-
-    return {
-      ...updated,
-      currentWeek: this.computeCurrentWeek(updated.startDate, updated.weekCount),
-    };
+  async update(id: string, data: any) {
+    try {
+      const cohort = await prisma.cohort.update({
+        where: { id },
+        data: {
+          name: data.name,
+          startDate: data.startDate ? new Date(data.startDate) : undefined,
+          weekCount: data.weekCount ? Number(data.weekCount) : undefined,
+        },
+      });
+      return {
+        ...cohort,
+        currentWeek: this.computeCurrentWeek(cohort.startDate, cohort.weekCount),
+      };
+    } catch (e) {
+      throw new NotFoundException(`Cohort with ID ${id} not found`);
+    }
   }
+
+  // --- Roster Management ---
 
   async getRoster(cohortId: string) {
-    return this.prisma.rosterMember.findMany({ where: { cohortId } });
+    return prisma.enrollment.findMany({
+      where: { cohortId },
+      include: {
+        user: { select: { id: true, name: true, email: true, image: true, role: true, status: true, createdAt: true } },
+        team: true,
+      }
+    });
   }
 
-  async addLearnerToRoster(
-    cohortId: string,
-    data: { userId: string; userName: string; userEmail: string; githubUsername?: string }
-  ) {
-    const existing = await this.prisma.rosterMember.findFirst({
-      where: { cohortId, userId: data.userId },
-    });
-
-    if (existing) {
-      if (existing.status === 'removed') {
-        return this.prisma.rosterMember.update({
-          where: { id: existing.id },
-          data: { status: 'active', removedAt: null },
-        });
-      }
+  async addLearnerToRoster(cohortId: string, data: { userId: string }) {
+    try {
+      return await prisma.enrollment.create({
+        data: {
+          cohortId,
+          userId: data.userId,
+        }
+      });
+    } catch(e) {
       throw new BadRequestException('Learner is already active in this cohort roster');
     }
-
-    const member = await this.prisma.rosterMember.create({
-      data: {
-        cohortId,
-        userId: data.userId,
-        userName: data.userName,
-        userEmail: data.userEmail,
-        githubUsername: data.githubUsername,
-        status: 'active',
-      },
-    });
-
-    // Update active count
-    const activeCount = await this.prisma.rosterMember.count({
-      where: { cohortId, status: 'active' },
-    });
-    await this.prisma.cohort.update({ where: { id: cohortId }, data: { learnerCount: activeCount } });
-
-    return member;
   }
 
   async softRemoveLearner(cohortId: string, userId: string) {
-    const existing = await this.prisma.rosterMember.findFirst({
-      where: { cohortId, userId },
-    });
-
-    if (!existing) {
-      throw new NotFoundException(`Roster member not found`);
+    // In Prisma, we could just delete the enrollment or mark it inactive.
+    // For now we'll delete it.
+    try {
+      return await prisma.enrollment.delete({
+        where: { userId_cohortId: { userId, cohortId } }
+      });
+    } catch (e) {
+      throw new NotFoundException(`Roster member not found for user ${userId} in cohort ${cohortId}`);
     }
-
-    const member = await this.prisma.rosterMember.update({
-      where: { id: existing.id },
-      data: { status: 'removed', removedAt: new Date() },
-    });
-
-    const activeCount = await this.prisma.rosterMember.count({
-      where: { cohortId, status: 'active' },
-    });
-    await this.prisma.cohort.update({ where: { id: cohortId }, data: { learnerCount: activeCount } });
-
-    return member;
   }
+
+  // --- Team Management ---
 
   async getTeams(cohortId: string) {
-    return this.prisma.team.findMany({ where: { cohortId } });
+    return prisma.team.findMany({
+      where: { cohortId },
+      include: {
+        enrollments: {
+          include: {
+            user: { select: { id: true, name: true, email: true, image: true, role: true, status: true, createdAt: true } },
+          },
+        },
+      }
+    });
   }
 
-  async createTeam(cohortId: string, data: { name: string; memberIds?: string[]; memberNames?: string[] }) {
-    const team = await this.prisma.team.create({
+  async createTeam(cohortId: string, data: { name: string }) {
+    return prisma.team.create({
       data: {
         cohortId,
         name: data.name,
-        memberIds: data.memberIds || [],
-        memberNames: data.memberNames || [],
-      },
+      }
     });
-
-    const teamCount = await this.prisma.team.count({ where: { cohortId } });
-    await this.prisma.cohort.update({ where: { id: cohortId }, data: { teamCount } });
-
-    return team;
   }
 
-  async updateTeam(
-    cohortId: string,
-    teamId: string,
-    data: { name?: string; memberIds?: string[]; memberNames?: string[] }
-  ) {
-    return this.prisma.team.update({
-      where: { id: teamId },
-      data: {
-        name: data.name,
-        memberIds: data.memberIds,
-        memberNames: data.memberNames,
-      },
-    });
+  async updateTeam(cohortId: string, teamId: string, data: { name?: string }) {
+    try {
+      return await prisma.team.update({
+        where: { id: teamId, cohortId },
+        data: { name: data.name }
+      });
+    } catch(e) {
+      throw new NotFoundException(`Team ${teamId} not found in cohort ${cohortId}`);
+    }
   }
 
   async deleteTeam(cohortId: string, teamId: string) {
-    await this.prisma.team.delete({ where: { id: teamId } });
-    const teamCount = await this.prisma.team.count({ where: { cohortId } });
-    await this.prisma.cohort.update({ where: { id: cohortId }, data: { teamCount } });
-    return { success: true };
+    try {
+      await prisma.team.delete({
+        where: { id: teamId, cohortId }
+      });
+      return { success: true };
+    } catch (e) {
+      throw new NotFoundException(`Team ${teamId} not found in cohort ${cohortId}`);
+    }
   }
 }

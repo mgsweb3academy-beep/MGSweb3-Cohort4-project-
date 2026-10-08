@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Implementation Plan</title>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; line-height: 1.6; max-width: 800px; margin: 0 auto; padding: 2rem; color: #333; }
+    h1 { border-bottom: 2px solid #eaecef; padding-bottom: .3em; }
+    h2 { border-bottom: 1px solid #eaecef; padding-bottom: .3em; margin-top: 1.5em; }
+    .alert { padding: 1rem; border-left: 4px solid; margin: 1rem 0; border-radius: 4px; }
+    .alert-important { border-color: #8250df; background-color: #fbf8ff; }
+    .alert-warning { border-color: #9a6700; background-color: #fff8c5; }
+    .alert-title { font-weight: bold; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem; }
+    .alert-important .alert-title { color: #8250df; }
+    .alert-warning .alert-title { color: #9a6700; }
+    code { background-color: #f6f8fa; padding: 0.2em 0.4em; border-radius: 3px; font-family: monospace; font-size: 85%; }
+    strong { font-weight: 600; }
+  </style>
+</head>
+<body>
+
+  <h1>Goal Description</h1>
+  <p>To transition the Corridor LMS from a scaffolded prototype (with mocked data) into a fully functional, production-ready application. This plan outlines the necessary steps to implement the 14 parts detailed in <code>CORRIDOR-PRD-14-PARTS_1.md</code>, focusing on database integration, authentication, GitHub webhook ingestion, and the AI agent architecture.</p>
+
+  <h2>User Review Required</h2>
+  <div class="alert alert-important">
+    <div class="alert-title">IMPORTANT</div>
+    <p>The current codebase has the UI components (<code>packages/ui</code>) and basic routing (<code>apps/web</code>, <code>apps/api</code>) scaffolded, but it relies entirely on in-memory mock data (e.g., <code>CoursesService</code> returns hardcoded arrays). The database layer and the AI service (<code>apps/ai-service</code>) have not been created yet. Please review the implementation order below.</p>
+  </div>
+
+  <h2>Open Questions</h2>
+  <div class="alert alert-warning">
+    <div class="alert-title">WARNING</div>
+    <ol>
+      <li><strong>Database Setup:</strong> The PRD specifies PostgreSQL + Prisma. Should we initialize this using a local Docker setup, or do you have a hosted database (like Supabase or Neon) ready?</li>
+      <li><strong>AI Architecture:</strong> The PRD mentions <code>apps/ai-service</code> using Python + LangGraph. I plan to initialize this as a FastAPI backend within the monorepo. Does this align with your expectations?</li>
+      <li><strong>GitHub Integration:</strong> GitHub OAuth and Webhooks are central to this LMS. We will need a GitHub App created in your organization to fully test this. Should we begin by mocking the webhook payloads, or are you ready to configure the GitHub App now?</li>
+    </ol>
+  </div>
+
+  <h2>Proposed Changes</h2>
+
+  <h3>1. Database & Infrastructure</h3>
+  <ul>
+    <li><strong>[NEW] <code>packages/db</code></strong>: Initialize a shared Prisma schema to be consumed by <code>apps/api</code> and <code>apps/web</code> (if needed for NextAuth).</li>
+    <li><strong>Data Modeling</strong>: Define Prisma models for <code>User</code>, <code>Program</code>, <code>Cohort</code>, <code>Team</code>, <code>Course</code>, <code>Lesson</code>, <code>Task</code>, <code>Enrollment</code>, and <code>Contribution</code>.</li>
+    <li><strong>[MODIFY] <code>apps/api/**/*.service.ts</code></strong>: Strip out all hardcoded arrays and replace them with real database queries using the Prisma client.</li>
+  </ul>
+
+  <h3>2. Authentication & Onboarding (Part 2)</h3>
+  <ul>
+    <li><strong>[MODIFY] <code>apps/web/app/api/auth/[...nextauth]/route.ts</code></strong>: Fully configure NextAuth with GitHub OAuth and Credentials providers, linking to the Prisma database.</li>
+    <li><strong>[MODIFY] <code>apps/api</code></strong>: Implement JWT/Session validation guards to secure all endpoints based on user roles (<code>student</code>, <code>instructor</code>, <code>admin</code>).</li>
+  </ul>
+
+  <h3>3. Git Integration & Contribution (Part 6)</h3>
+  <ul>
+    <li><strong>[NEW] <code>apps/api/src/webhooks</code></strong>: Create endpoints to ingest GitHub <code>push</code>, <code>pull_request</code>, and <code>pull_request_review</code> events.</li>
+    <li><strong>Contribution Engine</strong>: Implement the composite score logic (files touched, surviving lines, reviews given) rather than raw commit counts, updating the <code>Task</code> and <code>Contribution</code> records.</li>
+  </ul>
+
+  <h3>4. AI Services (Parts 8 & 9)</h3>
+  <ul>
+    <li><strong>[NEW] <code>apps/ai-service</code></strong>: Initialize a Python FastAPI project.</li>
+    <li><strong>LangGraph Agents</strong>: Build the Supervisor (Manager), Review Agent, Progress Coach, and Tutor agents.</li>
+    <li><strong>Internal API</strong>: Establish a secure communication channel between <code>apps/api</code> (NestJS) and <code>apps/ai-service</code> (Python).</li>
+  </ul>
+
+  <h3>5. Frontend & UI Polish (Parts 3-5, 10-12)</h3>
+  <ul>
+    <li><strong>[MODIFY] <code>apps/web/app/**/*</code></strong>: Connect the mocked frontend pages (Dashboard, Board, Queue, Split, Admin) to the newly functioning <code>apps/api</code> endpoints.</li>
+    <li><strong>State & Real-time</strong>: Ensure the UI correctly reflects task state transitions triggered by webhooks or the AI Manager.</li>
+  </ul>
+
+  <h2>Verification Plan</h2>
+
+  <h3>Automated Tests</h3>
+  <ul>
+    <li>Run unit tests for the NestJS services to ensure CRUD operations and role-based access control work correctly.</li>
+    <li>Write integration tests for the GitHub webhook parser to verify it correctly updates Task states (<code>Pushed</code>, <code>In Review</code>, <code>Closed</code>).</li>
+  </ul>
+
+  <h3>Manual Verification</h3>
+  <ul>
+    <li>Complete an end-to-end user journey: Register -&gt; Join Cohort -&gt; Assign Task -&gt; Trigger Mock GitHub Push -&gt; Verify Contribution Matrix Updates -&gt; Verify AI Manager logs an action.</li>
+    <li>Test the AI Tutor chat interface in the Student Dashboard to ensure it grounds responses in the course content.</li>
+  </ul>
+
+</body>
+</html>

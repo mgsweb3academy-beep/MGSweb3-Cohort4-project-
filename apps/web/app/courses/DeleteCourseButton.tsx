@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { Course } from 'types';
 import { Button } from 'ui';
 import { useRouter } from 'next/navigation';
+import { useMutation } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 
 interface Props {
   courses: Course[];
@@ -14,21 +16,16 @@ export default function DeleteCourseButton({ courses }: Props) {
   const [selectedCourseId, setSelectedCourseId] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const router = useRouter();
+  const removeCourse = useMutation(api.courses.remove);
 
   const handleDelete = async () => {
     if (!selectedCourseId) return;
-    
+
     // The modal itself acts as the confirmation per the new design
 
     setIsDeleting(true);
     try {
-      const res = await fetch(`http://localhost:3001/courses/${selectedCourseId}`, {
-        method: 'DELETE',
-      });
-      
-      if (!res.ok) {
-        throw new Error('Failed to delete course');
-      }
+      await removeCourse({ id: selectedCourseId });
 
       setIsOpen(false);
       setSelectedCourseId('');
@@ -43,7 +40,7 @@ export default function DeleteCourseButton({ courses }: Props) {
 
   return (
     <>
-      <button 
+      <button
         onClick={() => setIsOpen(true)}
         className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors font-medium text-sm flex items-center gap-2"
       >
@@ -59,8 +56,8 @@ export default function DeleteCourseButton({ courses }: Props) {
             <p className="text-dim mb-4 text-sm font-medium">
               Are you sure you want to delete this course? You can not undo the effect of this action
             </p>
-            
-            <select 
+
+            <select
               className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white mb-6 focus:outline-none focus:border-amber-500"
               value={selectedCourseId}
               onChange={(e) => setSelectedCourseId(e.target.value)}
@@ -77,7 +74,7 @@ export default function DeleteCourseButton({ courses }: Props) {
               <Button variant="outline" onClick={() => setIsOpen(false)} disabled={isDeleting}>
                 Cancel
               </Button>
-              <button 
+              <button
                 onClick={handleDelete}
                 disabled={!selectedCourseId || isDeleting}
                 className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"

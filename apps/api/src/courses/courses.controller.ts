@@ -7,28 +7,28 @@ export class CoursesController {
   constructor(private readonly coursesService: CoursesService) {}
 
   @Post()
-  create(@Body() body: { title: string }): Course {
+  async create(@Body() body: { title: string }): Promise<Course> {
     return this.coursesService.create(body);
   }
 
   @Get()
-  findAll(): Course[] {
+  async findAll(): Promise<Course[]> {
     return this.coursesService.findAll();
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string): Course {
+  async findOne(@Param('id') id: string): Promise<Course> {
     return this.coursesService.findOne(id);
   }
 
   @Post(':id/request-review')
-  requestReview(@Param('id') id: string): Course {
+  async requestReview(@Param('id') id: string): Promise<Course> {
     return this.coursesService.requestReview(id);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string): { success: boolean } {
-    this.coursesService.remove(id);
+  async remove(@Param('id') id: string): Promise<{ success: boolean }> {
+    await this.coursesService.remove(id);
     return { success: true };
   }
 }

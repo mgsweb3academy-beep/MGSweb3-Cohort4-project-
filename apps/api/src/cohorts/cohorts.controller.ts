@@ -40,7 +40,7 @@ export class CohortsController {
   }
 
   @Put(':id')
-  async update(@Param('id') id: string, @Body() body: Partial<Cohort>) {
+  async update(@Param('id') id: string, @Body() body: any) {
     return this.cohortsService.update(id, body);
   }
 

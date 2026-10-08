@@ -7,7 +7,7 @@ export async function POST(req: Request) {
     const { email, token, newPassword } = body;
 
     if (token) {
-      const success = resetPasswordWithToken(token, newPassword || 'changeme');
+      const success = await resetPasswordWithToken(token, newPassword || 'changeme');
       return NextResponse.json({ success });
     }
 
@@ -15,7 +15,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: { code: 'BAD_REQUEST', message: 'Email is required' } }, { status: 400 });
     }
 
-    const result = requestPasswordReset(email);
+    const result = await requestPasswordReset(email);
     return NextResponse.json({ success: !!result, token: result?.token });
   } catch {
     return NextResponse.json({ error: { code: 'BAD_REQUEST', message: 'Invalid request' } }, { status: 400 });
