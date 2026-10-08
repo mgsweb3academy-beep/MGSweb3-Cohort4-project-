@@ -18,6 +18,7 @@ import {
   validateTransition,
 } from '@/lib/task-service';
 import { Nav } from 'ui';
+import { ReviewSection } from './ReviewSection';
 
 // FlowStrip steps (Part 1's FlowStrip would be imported in production)
 const PIPELINE: { state: TaskState; managed: boolean }[] = [
@@ -350,6 +351,11 @@ export default function TaskDetailPage() {
                 ))}
               </ol>
             </div>
+
+            {/* Part 7: Peer Review Section */}
+            {(task.state === 'Pushed' || task.state === 'In Review' || task.state === 'Closed') && (
+              <ReviewSection task={task} currentUser={user} />
+            )}
           </div>
 
           {/* ── Right: sidebar ── */}

@@ -23,7 +23,7 @@ const VALID_TRANSITIONS: Record<TaskState, TaskState[]> = {
   'Assigned':    ['Branched'],
   'Branched':    ['Pushed'],
   'Pushed':      ['In Review'],
-  'In Review':   ['Closed'],
+  'In Review':   ['Closed', 'Pushed'], // Pushed for changes requested
   'Closed':      ['Assigned'],   // reopen only
 };
 
@@ -62,6 +62,22 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   const task = taskStore[taskIndex];
   const allowed = VALID_TRANSITIONS[task.state] ?? [];
+
+  if (to === 'Closed') {
+    // Part 7: Require 2 approvals to close
+    const approvedCount = task.reviews?.filter(r => r.status === 'approved').length || 0;
+    if (approvedCount < 2) {
+      return NextResponse.json(
+        {
+          error: {
+            code: 'INSUFFICIENT_REVIEWS',
+            message: `Task requires 2 peer approvals to be closed. Currently has ${approvedCount}.`,
+          },
+        },
+        { status: 400 },
+      );
+    }
+  }
 
   if (!allowed.includes(to as TaskState)) {
     return NextResponse.json(

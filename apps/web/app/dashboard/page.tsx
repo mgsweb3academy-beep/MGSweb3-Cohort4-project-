@@ -140,10 +140,10 @@ export default function DashboardPage() {
   return (
     <>
       <Nav />
-      <main className="min-h-screen bg-[var(--ink)] text-[var(--chalk)] p-6">
-        <div className="mx-auto flex max-w-6xl flex-col gap-6">
-          <header className="space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-3">
+      <main className="min-h-screen bg-[var(--ink)] text-[var(--chalk)] p-8 md:p-12">
+        <div className="mx-auto flex max-w-6xl flex-col gap-10">
+          <header className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
                 <p className="font-mono text-[0.72rem] uppercase tracking-[0.12em] text-[var(--signal)]">Student dashboard</p>
                 <h1 className="text-3xl font-semibold">Welcome back{user ? `, ${studentName}` : ''}</h1>
@@ -184,8 +184,8 @@ export default function DashboardPage() {
             <ContributionMatrix learners={selectedData.matrix} weeks={8} currentWeek={view === 'week-eight' ? 8 : 1} />
           </CohortPanel>
 
-          <section className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-            <Card className="bg-[var(--ink-2)] p-6">
+          <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+            <Card className="bg-[var(--ink-2)] p-8">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="font-mono text-[0.7rem] uppercase tracking-[0.12em] text-[var(--signal)]">Current task</p>
@@ -218,13 +218,13 @@ export default function DashboardPage() {
               </div>
             </Card>
 
-            <Card className="bg-[var(--ink-2)] p-6">
+            <Card className="bg-[var(--ink-2)] p-8">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="font-mono text-[0.7rem] uppercase tracking-[0.12em] text-[var(--signal)]">Contribution standing</p>
                   <h2 className="mt-1 text-xl font-semibold">Your team split</h2>
                 </div>
-                <NotificationBell />
+                <NotificationBell notifications={[]} onMarkAsRead={() => {}} />
               </div>
 
               <div className="mt-4 rounded border border-[var(--line)] bg-[var(--ink)] p-4">
@@ -251,8 +251,8 @@ export default function DashboardPage() {
             </Card>
           </section>
 
-          <section className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
-            <Card className="bg-[var(--ink-2)] p-6">
+          <section className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
+            <Card className="bg-[var(--ink-2)] p-8 h-full">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="font-mono text-[0.7rem] uppercase tracking-[0.12em] text-[var(--signal)]">Enrolled courses</p>
@@ -279,8 +279,8 @@ export default function DashboardPage() {
               </div>
             </Card>
 
-            <div className="grid gap-4">
-              <Card className="bg-[var(--ink-2)] p-6">
+            <div className="flex flex-col gap-6">
+              <Card className="bg-[var(--ink-2)] p-8">
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="font-mono text-[0.7rem] uppercase tracking-[0.12em] text-[var(--signal)]">Upcoming deadlines</p>
@@ -301,7 +301,7 @@ export default function DashboardPage() {
                 </div>
               </Card>
 
-              <Card className="bg-[var(--ink-2)] p-6">
+              <Card className="bg-[var(--ink-2)] p-8 h-full">
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="font-mono text-[0.7rem] uppercase tracking-[0.12em] text-[var(--signal)]">Certificates</p>
@@ -318,9 +318,9 @@ export default function DashboardPage() {
             </div>
           </section>
 
-          <section className="grid gap-4 lg:grid-cols-[1fr_1fr]">
-            <Card className="bg-[var(--ink-2)] p-6">
-              <div className="mb-3">
+          <section className="grid gap-6 lg:grid-cols-[1fr_1fr]">
+            <Card className="bg-[var(--ink-2)] p-8">
+              <div className="mb-4">
                 <p className="font-mono text-[0.7rem] uppercase tracking-[0.12em] text-[var(--signal)]">AI tutor</p>
                 <h2 className="mt-1 text-xl font-semibold">Open the tutor from the dashboard</h2>
               </div>
@@ -336,8 +336,8 @@ export default function DashboardPage() {
               {tutorAnswer && <p className="mt-4 rounded border border-[var(--line)] bg-[var(--ink)] p-3 text-sm text-[var(--dim)]">{tutorAnswer}</p>}
             </Card>
 
-            <Card className="bg-[var(--ink-2)] p-6">
-              <div className="mb-3">
+            <Card className="bg-[var(--ink-2)] p-8">
+              <div className="mb-4">
                 <p className="font-mono text-[0.7rem] uppercase tracking-[0.12em] text-[var(--signal)]">Notifications</p>
                 <h2 className="mt-1 text-xl font-semibold">What changed for you</h2>
               </div>

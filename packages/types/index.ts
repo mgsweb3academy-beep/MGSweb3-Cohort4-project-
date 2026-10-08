@@ -119,6 +119,18 @@ export interface TaskTransition {
   byName: string;  // 'System' | 'Manager' | user display name
 }
 
+export type ReviewStatus = 'approved' | 'changes_requested';
+
+export interface TaskReview {
+  id: string;
+  taskId: string;
+  reviewerId: string;
+  reviewerName: string;
+  status: ReviewStatus;
+  comment: string;
+  createdAt: string;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -137,6 +149,8 @@ export interface Task {
   closedAt?: string;
   /** Full transition history. Append-only; never mutate past entries. */
   transitions: TaskTransition[];
+  /** Peer reviews given for this task */
+  reviews?: TaskReview[];
 }
 
 export interface Contribution {

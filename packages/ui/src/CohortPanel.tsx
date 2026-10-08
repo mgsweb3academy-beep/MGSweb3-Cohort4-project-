@@ -21,12 +21,18 @@ export const CohortPanel = ({
 }: CohortPanelProps) => {
   return (
     <div className="mt-[4rem] bg-[linear-gradient(180deg,var(--ink-2),#131924)] border border-line rounded-[18px] p-[clamp(1rem,3vw,1.6rem)] text-left shadow-[0_40px_80px_-40px_rgba(0,0,0,.8)] rise" style={{ '--d': '.55s' } as React.CSSProperties}>
-      <div className="flex flex-wrap items-baseline gap-[.75rem] pb-[1.2rem] border-b border-line">
-        <h2 className="font-display text-[1.05rem] font-semibold m-0 tracking-[-.01em]">{cohortName}</h2>
-        <span className="mono">{learnersCount} learners · {teamsCount} teams</span>
-        <span className="ml-auto font-mono text-[.72rem] tracking-[.1em] text-mark">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-[var(--line)]">
+        <div>
+          <h2 className="text-2xl font-semibold m-0 text-[var(--chalk)] tracking-tight">{cohortName}</h2>
+          <div className="mt-2 flex items-center gap-2 text-sm text-[var(--dim)] font-mono">
+            <span>{learnersCount} learners</span>
+            <span>·</span>
+            <span>{teamsCount} teams</span>
+          </div>
+        </div>
+        <div className="font-mono text-[0.72rem] tracking-[0.1em] text-[var(--signal)] uppercase px-3 py-1.5 bg-[var(--ink)] border border-[var(--line)] rounded-full self-start md:self-auto">
           Week {currentWeek} of {totalWeeks}
-        </span>
+        </div>
       </div>
 
       {children}

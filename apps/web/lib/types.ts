@@ -119,6 +119,18 @@ export interface TaskTransition {
   byName: string;  // 'System' | 'Manager' | user display name
 }
 
+export type ReviewStatus = 'approved' | 'changes_requested';
+
+export interface TaskReview {
+  id: string;
+  taskId: string;
+  reviewerId: string;
+  reviewerName: string;
+  status: ReviewStatus;
+  comment: string;
+  createdAt: string;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -137,6 +149,8 @@ export interface Task {
   closedAt?: string;
   /** Full transition history. Append-only; never mutate past entries. */
   transitions: TaskTransition[];
+  /** Peer reviews given for this task */
+  reviews?: TaskReview[];
 }
 
 export interface Contribution {
@@ -303,4 +317,26 @@ export interface InstructorDraft {
   requiresApproval: boolean;
   createdAt: string;
   status: 'draft' | 'approved' | 'discarded';
+}
+
+export type AgentAutonomyLevel = 'suggest_only' | 'autonomous';
+
+export interface AgentConfig {
+  id: string; // e.g. 'manager', 'review', 'progress-coach'
+  name: string;
+  enabled: boolean;
+  autonomyLevel: AgentAutonomyLevel;
+}
+
+export type AgentLogStatus = 'applied' | 'proposed';
+
+export interface AgentLog {
+  id: string;
+  agentId: string; // which agent took the action
+  action: string;  // e.g. "Reopened 3 tasks merged without review."
+  status: AgentLogStatus;
+  timestamp: string;
+  cohortId?: string; // Optional context
+  teamId?: string;   // Optional context
+  taskId?: string;   // Optional context
 }

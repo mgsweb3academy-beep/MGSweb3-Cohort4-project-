@@ -1,12 +1,14 @@
 import { Injectable, NotFoundException, BadRequestException, Inject } from '@nestjs/common';
 import { prisma } from 'db';
 import { ProgramsService } from '../programs/programs.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class CohortsService {
   constructor(
     @Inject(ProgramsService)
-    private readonly programsService: ProgramsService
+    private readonly programsService: ProgramsService,
+    private prisma: PrismaService,
   ) {}
 
   private computeCurrentWeek(startDateStr: Date, weekCount: number): number {
