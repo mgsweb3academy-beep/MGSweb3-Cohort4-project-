@@ -4,6 +4,7 @@ import { CohortsService } from './cohorts.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
 @Controller()
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -22,8 +23,8 @@ export class CohortsController {
   }
 
   @Get('cohorts')
-  async getCohorts() {
-    return this.cohortsService.getCohorts();
+  async getCohorts(@CurrentUser() user: any) {
+    return this.cohortsService.getCohorts(user);
   }
 
   @Post('cohorts')
@@ -33,13 +34,13 @@ export class CohortsController {
   }
 
   @Get('cohorts/:id/teams')
-  async getTeams(@Param('id') cohortId: string) {
-    return this.cohortsService.getTeamsByCohort(cohortId);
+  async getTeams(@Param('id') cohortId: string, @CurrentUser() user: any) {
+    return this.cohortsService.getTeamsByCohort(cohortId, user);
   }
 
   @Post('cohorts/:id/teams')
   @Roles('instructor', 'admin')
-  async createTeam(@Param('id') cohortId: string, @Body() body: { name: string; memberUserIds: string[] }) {
-    return this.cohortsService.createTeam(cohortId, body);
+  async createTeam(@Param('id') cohortId: string, @CurrentUser() user: any, @Body() body: { name: string; memberUserIds: string[] }) {
+    return this.cohortsService.createTeam(cohortId, body, user);
   }
 }

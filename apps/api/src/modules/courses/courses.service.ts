@@ -1,14 +1,44 @@
 // apps/api/src/modules/courses/courses.service.ts
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class CoursesService {
   constructor(private prisma: PrismaService) {}
 
+  // Admins see everything, instructors see published courses plus their own, everyone else only published courses.
+  private visibilityFilter(user: { id: string; role: string }) {
+    if (user.role === 'admin') return {};
+    if (user.role === 'instructor') return { OR: [{ status: 'published' as const }, { instructorId: user.id }] };
+    return { status: 'published' as const };
+  }
+
+  private canManageCourse(user: { id: string; role: string }, course: { instructorId: string }) {
+    return user.role === 'admin' || (user.role === 'instructor' && course.instructorId === user.id);
+  }
+
+  private async assertCanManageCourse(courseId: string, user: { id: string; role: string }) {
+    const course = await this.prisma.course.findUnique({ where: { id: courseId } });
+    if (!course) throw new NotFoundException({ error: { code: 'COURSE_NOT_FOUND', message: 'Course not found' } });
+    if (!this.canManageCourse(user, course)) {
+      throw new ForbiddenException({ error: { code: 'FORBIDDEN', message: 'You do not manage this course' } });
+    }
+    return course;
+  }
+
+  private async assertLessonReadable(lessonId: string, user: { id: string; role: string }) {
+    const lesson = await this.prisma.lesson.findUnique({ where: { id: lessonId }, include: { course: true } });
+    if (!lesson) throw new NotFoundException({ error: { code: 'LESSON_NOT_FOUND', message: 'Lesson not found' } });
+    if (lesson.course.status !== 'published' && !this.canManageCourse(user, lesson.course)) {
+      throw new NotFoundException({ error: { code: 'LESSON_NOT_FOUND', message: 'Lesson not found' } });
+    }
+    return lesson;
+  }
+
   // Courses
-  async getCourses() {
+  async getCourses(user: { id: string; role: string }) {
     const courses = await this.prisma.course.findMany({
+      where: this.visibilityFilter(user),
       include: {
         program: true,
         instructor: true,
@@ -34,9 +64,9 @@ export class CoursesService {
     }));
   }
 
-  async getCourseById(id: string) {
-    const course = await this.prisma.course.findUnique({
-      where: { id },
+  async getCourseById(id: string, user: { id: string; role: string }) {
+    const course = await this.prisma.course.findFirst({
+      where: { id, ...this.visibilityFilter(user) },
       include: {
         program: true,
         instructor: true,
@@ -80,9 +110,8 @@ export class CoursesService {
   }
 
   // Course State Machine
-  async requestReview(courseId: string) {
-    const course = await this.prisma.course.findUnique({ where: { id: courseId } });
-    if (!course) throw new NotFoundException('Course not found');
+  async requestReview(courseId: string, user: { id: string; role: string }) {
+    const course = await this.assertCanManageCourse(courseId, user);
     if (course.status !== 'draft' && course.status !== 'rejected') {
       throw new BadRequestException({ error: { code: 'INVALID_STATE_TRANSITION', message: 'Course can only enter review from draft or rejected state' } });
     }
@@ -133,15 +162,16 @@ export class CoursesService {
   }
 
   // Lessons
-  async getLessonById(id: string) {
-    const lesson = await this.prisma.lesson.findUnique({ where: { id } });
-    if (!lesson) {
-      throw new NotFoundException({ error: { code: 'LESSON_NOT_FOUND', message: 'Lesson not found' } });
-    }
+  async getLessonById(id: string, user: { id: string; role: string }) {
+    const { course, ...lesson } = await this.assertLessonReadable(id, user);
     return lesson;
   }
 
-  async createLesson(data: { courseId: string; title: string; contentType: any; contentUrl?: string; textContent?: string; order?: number }) {
+  async createLesson(
+    data: { courseId: string; title: string; contentType: any; contentUrl?: string; textContent?: string; order?: number },
+    user: { id: string; role: string },
+  ) {
+    await this.assertCanManageCourse(data.courseId, user);
     return this.prisma.lesson.create({
       data: {
         courseId: data.courseId,
@@ -154,15 +184,28 @@ export class CoursesService {
     });
   }
 
-  async updateLesson(id: string, data: { title?: string; textContent?: string; contentUrl?: string }) {
+  async updateLesson(
+    id: string,
+    data: { title?: string; textContent?: string; contentUrl?: string },
+    user: { id: string; role: string },
+  ) {
+    const lesson = await this.prisma.lesson.findUnique({ where: { id } });
+    if (!lesson) throw new NotFoundException({ error: { code: 'LESSON_NOT_FOUND', message: 'Lesson not found' } });
+    await this.assertCanManageCourse(lesson.courseId, user);
+
     return this.prisma.lesson.update({
       where: { id },
-      data,
+      data: { title: data.title, textContent: data.textContent, contentUrl: data.contentUrl },
     });
   }
 
   // Lesson Progress
-  async getLessonProgress(lessonId: string, userId: string) {
+  async getLessonProgress(lessonId: string, user: { id: string; role: string }) {
+    await this.assertLessonReadable(lessonId, user);
+    return this.findOrCreateProgress(lessonId, user.id);
+  }
+
+  private async findOrCreateProgress(lessonId: string, userId: string) {
     let progress = await this.prisma.lessonProgress.findUnique({
       where: { lessonId_userId: { lessonId, userId } },
       include: { bookmarks: true, notes: true },
@@ -178,22 +221,26 @@ export class CoursesService {
     return progress;
   }
 
-  async updateLessonProgress(lessonId: string, userId: string, data: { lastPosition?: number; isCompleted?: boolean }) {
+  async updateLessonProgress(lessonId: string, user: { id: string; role: string }, data: { lastPosition?: number; isCompleted?: boolean }) {
+    await this.assertLessonReadable(lessonId, user);
+    // Only whitelisted fields are copied so a request body cannot rewrite userId/lessonId.
+    const changes = { lastPosition: data.lastPosition, isCompleted: data.isCompleted };
     return this.prisma.lessonProgress.upsert({
-      where: { lessonId_userId: { lessonId, userId } },
+      where: { lessonId_userId: { lessonId, userId: user.id } },
       create: {
         lessonId,
-        userId,
+        userId: user.id,
         lastPosition: data.lastPosition || 0,
         isCompleted: data.isCompleted || false,
       },
-      update: data,
+      update: changes,
       include: { bookmarks: true, notes: true },
     });
   }
 
-  async addBookmark(lessonId: string, userId: string, data: { position: number; label: string }) {
-    const progress = await this.getLessonProgress(lessonId, userId);
+  async addBookmark(lessonId: string, user: { id: string; role: string }, data: { position: number; label: string }) {
+    await this.assertLessonReadable(lessonId, user);
+    const progress = await this.findOrCreateProgress(lessonId, user.id);
     return this.prisma.bookmark.create({
       data: {
         lessonProgressId: progress.id,
@@ -203,8 +250,9 @@ export class CoursesService {
     });
   }
 
-  async addNote(lessonId: string, userId: string, data: { position: number; content: string }) {
-    const progress = await this.getLessonProgress(lessonId, userId);
+  async addNote(lessonId: string, user: { id: string; role: string }, data: { position: number; content: string }) {
+    await this.assertLessonReadable(lessonId, user);
+    const progress = await this.findOrCreateProgress(lessonId, user.id);
     return this.prisma.note.create({
       data: {
         lessonProgressId: progress.id,

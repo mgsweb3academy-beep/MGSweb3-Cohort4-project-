@@ -1,11 +1,7 @@
 import { v } from 'convex/values';
 import { internalMutation } from './_generated/server';
 
-// Demo student account password: "corridor-dev". Admin and instructor passwords are passed in at
-// seed time so they never live in the repo. Hash format matches authNode.ts.
-const STUDENT_PASSWORD_HASH =
-  'pbkdf2_sha256$310000$bddf7af89420006c9a4e471fac6859a8$0fd5c18a7a31bf175b710b9c5e22d47eb089d2c16f476d35328e4cf17baf8440';
-
+// Development-only seed. All credential hashes must be supplied by the operator.
 // MarkdownViewer only renders "# ", "## ", "- " and plain paragraphs, so lesson text sticks to those.
 const text = (...lines: string[]) => lines.join('\n');
 
@@ -308,13 +304,13 @@ const COURSES: SeedCourse[] = [
 ];
 
 export const run = internalMutation({
-  args: { staffPasswordHash: v.string() },
-  handler: async (ctx, { staffPasswordHash }) => {
+  args: { staffPasswordHash: v.string(), studentPasswordHash: v.string() },
+  handler: async (ctx, { staffPasswordHash, studentPasswordHash }) => {
     if (await ctx.db.query('programs').first()) return 'Already seeded';
 
-    await ctx.db.insert('users', { email: 'admin@example.com', name: 'Admin User', role: 'admin', status: 'active', passwordHash: staffPasswordHash });
-    await ctx.db.insert('users', { email: 'instructor@example.com', name: 'Dr. Yemi F.', role: 'instructor', status: 'active', passwordHash: staffPasswordHash });
-    await ctx.db.insert('users', { email: 'test@example.com', name: 'Test Student', role: 'student', status: 'active', passwordHash: STUDENT_PASSWORD_HASH });
+    await ctx.db.insert('users', { email: 'admin@example.com', name: 'Admin User', role: 'admin', status: 'active', emailVerified: true, passwordHash: staffPasswordHash });
+    const instructorId = await ctx.db.insert('users', { email: 'instructor@example.com', name: 'Dr. Yemi F.', role: 'instructor', status: 'active', emailVerified: true, passwordHash: staffPasswordHash });
+    const studentId = await ctx.db.insert('users', { email: 'test@example.com', name: 'Test Student', role: 'student', status: 'active', emailVerified: true, passwordHash: studentPasswordHash });
 
     const backend = await ctx.db.insert('programs', {
       name: 'Backend Engineering',
@@ -332,6 +328,7 @@ export const run = internalMutation({
       const courseId = await ctx.db.insert('courses', {
         title: course.title,
         programId: programs[course.program],
+        instructorId,
         instructorName: course.instructorName,
         status: course.status,
       });
@@ -340,25 +337,33 @@ export const run = internalMutation({
       }
     }
 
-    await ctx.db.insert('cohorts', {
+    const backendCohort = await ctx.db.insert('cohorts', {
+      instructorId,
       name: 'Backend Engineering — Cohort 07',
       programId: backend,
       startDate: '2026-08-17',
       weekCount: 8,
       instructorName: 'Dr. Yemi F.',
-      learnerCount: 41,
+      learnerCount: 1,
       teamCount: 8,
     });
-    await ctx.db.insert('cohorts', {
+    const frontendCohort = await ctx.db.insert('cohorts', {
+      instructorId,
       name: 'Web3 Frontend — Cohort 03',
       programId: frontend,
       startDate: '2026-10-05',
       weekCount: 6,
       instructorName: 'Ada N.',
-      learnerCount: 18,
+      learnerCount: 0,
       teamCount: 4,
     });
 
+    for (const [cohortId, count] of [[backendCohort, 8], [frontendCohort, 4]] as const) {
+      for (let i = 1; i <= count; i++) {
+        const teamId = await ctx.db.insert('teams', { name: `Team ${i}`, cohortId });
+        if (cohortId === backendCohort && i === 1) await ctx.db.insert('enrollments', { userId: studentId, cohortId, teamId });
+      }
+    }
     return 'Seeded';
   },
 });

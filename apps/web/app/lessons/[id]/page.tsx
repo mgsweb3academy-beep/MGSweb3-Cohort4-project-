@@ -5,7 +5,8 @@ import { Lesson, LessonProgress } from 'types';
 import { Button, VideoPlayer, AudioPlayer, PdfViewer, MarkdownViewer, CodeSnippet } from 'ui';
 import Link from 'next/link';
 import { use } from 'react';
-import { useConvex } from 'convex/react';
+import { useSession } from 'next-auth/react';
+import { useConvex, useConvexAuth } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 
 export default function LessonPage({ params }: { params: Promise<{ id: string }> }) {
@@ -18,9 +19,13 @@ export default function LessonPage({ params }: { params: Promise<{ id: string }>
   const [noteInput, setNoteInput] = React.useState('');
   const [currentPosition, setCurrentPosition] = React.useState(0);
 
-  const userId = 'user_demo'; // Mock user
+  const { data: session } = useSession();
+  const { isAuthenticated } = useConvexAuth();
+  const userId = session?.user?.id ?? '';
+
 
   React.useEffect(() => {
+    if (!isAuthenticated || !userId) return;
     const fetchData = async () => {
       try {
         const [lessonData, progressData] = await Promise.all([
@@ -38,7 +43,7 @@ export default function LessonPage({ params }: { params: Promise<{ id: string }>
       }
     };
     fetchData();
-  }, [convex, id]);
+  }, [convex, id, userId, isAuthenticated]);
 
   const handleProgress = (pos: number) => {
     setCurrentPosition(pos);

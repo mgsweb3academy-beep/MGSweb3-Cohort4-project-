@@ -6,6 +6,7 @@
     "packages/*"
   ],
   "scripts": {
-    "postinstall": "npm run build --workspace=packages/db"
+    "postinstall": "npm run build --workspace=packages/db && npm run prisma:generate --workspace=api",
+    "test": "npm run test --workspace=web"
   }
 }

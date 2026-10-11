@@ -1,8 +1,7 @@
-import { NextResponse, type NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getSecurityHeaders, getCorsHeaders } from '@/lib/security/headers';
 import { checkRateLimit, RATE_LIMIT_PRESETS, getRateLimitHeaders } from '@/lib/rate-limit/rate-limiter';
 import { auth } from '@/auth';
-import { getUserByEmail } from '@/lib/auth-store';
 
 /**
  * Corridor LMS — Core Next.js Request Middleware
@@ -13,7 +12,7 @@ import { getUserByEmail } from '@/lib/auth-store';
  * - Role-Based Route Guarding
  */
 
-export default auth(async function middleware(request: NextRequest) {
+export default auth(async function middleware(request) {
   const { pathname } = request.nextUrl;
   const origin = request.headers.get('origin');
   const method = request.method;
@@ -29,7 +28,7 @@ export default auth(async function middleware(request: NextRequest) {
 
   // 2. Determine Rate Limiting Tier
   const isAIEndpoint = pathname.startsWith('/api/v1/ai') || pathname.startsWith('/api/ai');
-  const isAuthEndpoint = pathname.startsWith('/api/auth');
+  const isAuthEndpoint = pathname.startsWith('/api/auth/callback') || pathname.startsWith('/api/auth/signin') || pathname.startsWith('/api/v1/auth');
   
   const rateLimitPreset = isAIEndpoint
     ? RATE_LIMIT_PRESETS.AI_ENDPOINT
@@ -38,7 +37,7 @@ export default auth(async function middleware(request: NextRequest) {
     : RATE_LIMIT_PRESETS.STANDARD_API;
 
   const clientIp = request.headers.get('x-forwarded-for') || '127.0.0.1';
-  const userId = request.headers.get('x-user-id') || clientIp;
+  const userId = request.auth?.user?.id || clientIp;
   const rateLimitKey = `rl:${userId}:${pathname}`;
 
   const rateLimitResult = await checkRateLimit(rateLimitKey, rateLimitPreset);
@@ -75,14 +74,12 @@ export default auth(async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  if (session?.user) {
-    const email = session.user.email as string | undefined;
-    const storedUser = email ? await getUserByEmail(email) : undefined;
-
-    if (storedUser?.status === 'suspended') {
+  if (session?.user && (session.user as any).status !== 'active' && !isAuthPage && !pathname.startsWith('/api/auth')) {
+      if (isApiRoute) return NextResponse.json({ error: { code: 'UNAUTHORIZED', message: 'Sign in required' } }, { status: 401 });
       return NextResponse.redirect(new URL('/login', request.url));
-    }
+  }
 
+  if (session?.user && (session.user as any).status === 'active') {
     const role = (session.user as any).role || 'student';
     
     // Redirect from root or auth pages to their respective dashboards

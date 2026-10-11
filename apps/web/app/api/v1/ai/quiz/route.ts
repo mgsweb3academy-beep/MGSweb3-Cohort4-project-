@@ -1,7 +1,10 @@
+import { guardAI } from '@/lib/ai-access';
 import { NextRequest, NextResponse } from 'next/server';
 import { getQuizQuestions, gradeQuizAttempt } from '@/lib/ai-service';
 
 export async function GET(req: NextRequest) {
+  const denied = await guardAI(undefined);
+  if (denied) return denied;
   const lessonId = req.nextUrl.searchParams.get('lessonId');
   if (!lessonId) {
     return NextResponse.json({ error: { code: 'VALIDATION_ERROR', message: 'lessonId is required.' } }, { status: 400 });
@@ -11,6 +14,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const denied = await guardAI(undefined);
+  if (denied) return denied;
   try {
     const body = await req.json();
     const { lessonId, answers } = body as { lessonId?: string; answers?: Record<string, string> };

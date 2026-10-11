@@ -327,7 +327,7 @@ export default function CohortDetailPage() {
                 </div>
               </div>
 
-              <Button variant="primary" onClick={() => setIsAddLearnerOpen(true)}>
+              <Button variant="solid" onClick={() => setIsAddLearnerOpen(true)}>
                 + Add Learner to Roster
               </Button>
             </div>
@@ -418,7 +418,7 @@ export default function CohortDetailPage() {
                 </p>
               </div>
 
-              <Button variant="primary" onClick={() => setIsCreateTeamOpen(true)}>
+              <Button variant="solid" onClick={() => setIsCreateTeamOpen(true)}>
                 + Create Team
               </Button>
             </div>
@@ -460,7 +460,7 @@ export default function CohortDetailPage() {
 
                     <div className="pt-3 border-t border-[var(--line)] flex justify-end gap-2">
                       <Button
-                        variant="secondary"
+                        variant="outline"
                         onClick={() => {
                           setEditingTeam(t);
                           setTeamName(t.name);
@@ -587,10 +587,10 @@ export default function CohortDetailPage() {
               </div>
 
               <div className="flex gap-3 justify-end pt-4 border-t border-[var(--line)]">
-                <Button type="button" variant="secondary" onClick={() => setIsAddLearnerOpen(false)}>
+                <Button type="button" variant="outline" onClick={() => setIsAddLearnerOpen(false)}>
                   Cancel
                 </Button>
-                <Button type="submit" variant="primary">
+                <Button type="submit" variant="solid">
                   Add to Roster
                 </Button>
               </div>
@@ -616,10 +616,10 @@ export default function CohortDetailPage() {
             </p>
 
             <div className="flex gap-3 justify-end pt-4 border-t border-[var(--line)]">
-              <Button variant="secondary" onClick={() => setSoftRemoveTarget(null)}>
+              <Button variant="outline" onClick={() => setSoftRemoveTarget(null)}>
                 Cancel
               </Button>
-              <Button variant="primary" onClick={handleConfirmSoftRemove}>
+              <Button variant="solid" onClick={handleConfirmSoftRemove}>
                 Confirm Soft Remove
               </Button>
             </div>
@@ -682,7 +682,7 @@ export default function CohortDetailPage() {
               <div className="flex gap-3 justify-end pt-4 border-t border-[var(--line)]">
                 <Button
                   type="button"
-                  variant="secondary"
+                  variant="outline"
                   onClick={() => {
                     setIsCreateTeamOpen(false);
                     setEditingTeam(null);
@@ -690,7 +690,7 @@ export default function CohortDetailPage() {
                 >
                   Cancel
                 </Button>
-                <Button type="submit" variant="primary">
+                <Button type="submit" variant="solid">
                   {editingTeam ? 'Save Team' : 'Create Team'}
                 </Button>
               </div>

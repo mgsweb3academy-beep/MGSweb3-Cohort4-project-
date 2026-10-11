@@ -3,15 +3,19 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { useConvex } from 'convex/react';
+import { useConvex, useConvexAuth } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Nav, Button, Card, StatusPill } from '@packages/ui';
-import { MOCK_USERS } from '../../lib/mock-data';
+import { useSession } from 'next-auth/react';
 import { calculateCohortWeek } from '../../lib/cohort-utils';
 import type { Cohort } from '../../lib/types';
 
 function CohortsContent() {
   const convex = useConvex();
+  const { isAuthenticated } = useConvexAuth();
+  const { data: session } = useSession();
+  const isAdmin = (session?.user as { role?: string })?.role === 'admin';
+  const [instructors, setInstructors] = useState<{ id: string; name: string; email: string }[]>([]);
   const searchParams = useSearchParams();
   const initialProgramId = searchParams.get('programId');
   const openScheduleModalParam = searchParams.get('schedule') === 'true';
@@ -25,9 +29,15 @@ function CohortsContent() {
   const [cohortName, setCohortName] = useState('');
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [weekCount, setWeekCount] = useState<number>(8);
-  const [instructorId, setInstructorId] = useState('u8');
+  const [instructorId, setInstructorId] = useState('');
 
   useEffect(() => {
+    if (!isAuthenticated) return;
+    if (isAdmin) convex.query(api.users.list, {}).then(users => {
+      const staff = users.filter(u => u.status === 'active' && (u.role === 'instructor' || u.role === 'admin'));
+      setInstructors(staff);
+      if (!instructorId && staff.length) setInstructorId(staff[0].id);
+    }).catch(console.error);
     convex.query(api.cohorts.list, {})
       .then(data => setCohorts(data as unknown as Cohort[]))
       .catch(console.error);
@@ -40,9 +50,10 @@ function CohortsContent() {
         }
       })
       .catch(console.error);
-  }, [convex]);
+  }, [convex, isAuthenticated, isAdmin]);
 
   useEffect(() => {
+    if (!isAuthenticated) return;
     if (openScheduleModalParam || initialProgramId) {
       if (initialProgramId && programs.length > 0) {
         setProgramId(initialProgramId);
@@ -75,7 +86,7 @@ function CohortsContent() {
         programId,
         startDate,
         weekCount: Number(weekCount),
-        instructorName: 'Dr. Yemi F.',
+        instructorId: instructorId ? instructorId as import('@/convex/_generated/dataModel').Id<'users'> : undefined,
       });
 
       if (newCohort) {
@@ -107,9 +118,9 @@ function CohortsContent() {
 
           <div className="flex gap-3">
             <Link href="/programs">
-              <Button variant="secondary">View Programs</Button>
+              <Button variant="outline">View Programs</Button>
             </Link>
-            <Button variant="primary" onClick={() => setIsScheduleOpen(true)}>
+            <Button variant="solid" onClick={() => setIsScheduleOpen(true)}>
               + Schedule Cohort
             </Button>
           </div>
@@ -127,9 +138,8 @@ function CohortsContent() {
                     <div className="flex items-center gap-3">
                       <span className="mono text-xs text-[var(--dim)]">{cohort.programName}</span>
                       <StatusPill
-                        status={cohort.status === 'active' ? 'in-progress' : cohort.status === 'completed' ? 'closed' : 'assigned'}
-                        label={cohort.status.toUpperCase()}
-                      />
+                        variant={cohort.status === 'active' ? 'teal' : cohort.status === 'completed' ? 'dim' : 'amber'}
+                      >{cohort.status.toUpperCase()}</StatusPill>
                     </div>
 
                     <h2 className="font-display text-xl font-bold tracking-tight">
@@ -155,7 +165,7 @@ function CohortsContent() {
                     </div>
 
                     <Link href={`/cohorts/${cohort.id}`}>
-                      <Button variant="secondary">
+                      <Button variant="outline">
                         Open Cohort Workspace →
                       </Button>
                     </Link>
@@ -234,7 +244,7 @@ function CohortsContent() {
                   onChange={(e) => setInstructorId(e.target.value)}
                   className="w-full bg-[var(--ink-3)] border border-[var(--line)] rounded-lg px-3 py-2 text-sm text-[var(--chalk)] focus:outline-none focus:border-[var(--signal)]"
                 >
-                  {MOCK_USERS.filter((u) => u.role === 'instructor').map((u) => (
+                  {instructors.map((u) => (
                     <option key={u.id} value={u.id}>
                       {u.name} ({u.email})
                     </option>
@@ -250,12 +260,12 @@ function CohortsContent() {
               <div className="flex gap-3 justify-end pt-4 border-t border-[var(--line)]">
                 <Button
                   type="button"
-                  variant="secondary"
+                  variant="outline"
                   onClick={() => setIsScheduleOpen(false)}
                 >
                   Cancel
                 </Button>
-                <Button type="submit" variant="primary">
+                <Button type="submit" variant="solid">
                   Launch Cohort
                 </Button>
               </div>

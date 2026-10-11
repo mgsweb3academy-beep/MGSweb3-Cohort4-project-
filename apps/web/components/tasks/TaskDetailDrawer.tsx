@@ -38,7 +38,7 @@ type Props = {
   onTaskUpdated: (updated: Task) => void;
 };
 
-export function TaskDetailDrawer({ task, userRole = 'instructor', onClose, onTaskUpdated }: Props) {
+export function TaskDetailDrawer({ task, userRole = 'student', onClose, onTaskUpdated }: Props) {
   const [activeTask, setActiveTask]   = useState<Task>(task);
   const [editing, setEditing]         = useState(false);
   const [editTitle, setEditTitle]     = useState(task.title);
@@ -67,7 +67,7 @@ export function TaskDetailDrawer({ task, userRole = 'instructor', onClose, onTas
     try {
       const res = await fetch(`/api/v1/tasks/${activeTask.id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', 'x-user-role': userRole },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title:       editTitle.trim() || undefined,
           description: editDesc.trim()  || undefined,
@@ -99,7 +99,7 @@ export function TaskDetailDrawer({ task, userRole = 'instructor', onClose, onTas
       const res = await fetch(`/api/v1/tasks/${activeTask.id}/transition`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ to, by: 'u8', byName: 'Dr. Yemi F.' }),
+        body: JSON.stringify({ to }),
       });
       if (!res.ok) {
         const body = await res.json();

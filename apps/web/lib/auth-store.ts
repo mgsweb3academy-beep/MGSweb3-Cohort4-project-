@@ -1,21 +1,25 @@
+import { createConvexToken } from './convex-token';
 import type { UserRole, UserStatus } from 'types';
 import { ConvexHttpClient } from 'convex/browser';
 import { api } from '@/convex/_generated/api';
 
-let _convex: ConvexHttpClient | null = null;
 function getConvex() {
-  if (!_convex) {
     const url = process.env.NEXT_PUBLIC_CONVEX_URL;
     if (!url) {
       throw new Error('NEXT_PUBLIC_CONVEX_URL is not set');
     }
-    _convex = new ConvexHttpClient(url);
-  }
-  return _convex;
+    return new ConvexHttpClient(url);
+}
+
+async function serviceConvex(email = 'corridor-auth-service') {
+  const client = getConvex();
+  client.setAuth(await createConvexToken(email, undefined, true));
+  return client;
 }
 
 type StoredUser = {
   id: string;
+  sessionVersion: number;
   name: string;
   email: string;
   role: UserRole;
@@ -34,53 +38,60 @@ export async function createUser(input: {
   githubUsername?: string;
   provider?: 'credentials' | 'github' | 'google';
 }) {
-  const user = await getConvex().action(api.authNode.register, {
+  const client = await serviceConvex(input.email);
+  const user = await client.action(api.authNode.register, {
     email: input.email,
     name: input.name,
     password: input.password ?? '',
+    provider: input.provider ?? 'credentials',
   });
   return user as StoredUser | null;
 }
 
 export async function getUserByEmail(email: string) {
-  const user = await getConvex().query(api.users.getByEmail, { email });
+  const client = getConvex();
+  client.setAuth(await createConvexToken(email));
+  const user = await client.query(api.users.getByEmail, { email: email.trim().toLowerCase() });
   return user as StoredUser | null;
 }
 
 export async function updateUserRole(id: string, role: UserRole) {
-  await getConvex().mutation(api.users.setRole, { id, role: role as 'student' | 'instructor' | 'admin' });
+  const { authenticatedConvex } = await import('./convex-server');
+  await (await authenticatedConvex()).mutation(api.users.setRole, { id, role: role as 'student' | 'instructor' | 'admin' });
 }
 
 export async function updateUserStatus(id: string, status: UserStatus) {
-  await getConvex().mutation(api.users.setStatus, { id, status: status as 'active' | 'suspended' });
+  const { authenticatedConvex } = await import('./convex-server');
+  await (await authenticatedConvex()).mutation(api.users.setStatus, { id, status: status as 'active' | 'suspended' });
 }
 
 export async function verifyPassword(email: string, password: string) {
-  const user = await getConvex().action(api.authNode.verifyCredentials, { email, password });
+  const user = await (await serviceConvex()).action(api.authNode.verifyCredentials, { email, password });
   return user as StoredUser | null;
 }
 
-// Mocks for now to fix Next.js build
+
 export async function requestEmailVerification(email: string) {
-  return { token: 'mock_token', email };
+  return (await serviceConvex()).action(api.authNode.requestToken, { email, kind: 'verify' });
 }
-
 export async function verifyEmailToken(token: string) {
-  return true;
+  return (await serviceConvex()).action(api.authNode.consumeToken, { token, kind: 'verify' });
 }
-
 export async function requestPasswordReset(email: string) {
-  return { token: 'mock_token', email };
+  return (await serviceConvex()).action(api.authNode.requestToken, { email, kind: 'reset' });
 }
-
 export async function resetPasswordWithToken(token: string, newPassword: string) {
-  return true;
+  return (await serviceConvex()).action(api.authNode.consumeToken, { token, kind: 'reset', newPassword });
 }
-
 export async function getInviteByCode(code: string) {
-  return { code, cohortId: 'cohort-07', createdBy: 'admin', createdAt: new Date().toISOString() };
+  const { authenticatedConvex } = await import('./convex-server');
+  return (await authenticatedConvex()).query(api.onboarding.getInvite, { code });
+}
+export async function acceptInvite(code: string) {
+  const { authenticatedConvex } = await import('./convex-server');
+  return (await authenticatedConvex()).mutation(api.onboarding.acceptInvite, { code });
 }
 
-export async function acceptInvite(code: string, userId: string) {
-  return { success: true, cohortId: 'cohort-07', enrollmentId: 'enr_1' };
+export async function claimOAuthUser(email: string) {
+  return (await serviceConvex(email)).action(api.authNode.claimOAuth, { email });
 }

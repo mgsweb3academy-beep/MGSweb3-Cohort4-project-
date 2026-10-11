@@ -1,6 +1,11 @@
 // apps/api/src/modules/cohorts/cohorts.service.ts
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+
+type Actor = { id: string; role: string };
+
+// Never include whole User rows here: they carry passwordHash and other private fields.
+const publicUser = { select: { id: true, name: true, avatarUrl: true, githubUsername: true } };
 
 @Injectable()
 export class CohortsService {
@@ -11,7 +16,7 @@ export class CohortsService {
     return this.prisma.program.findMany({
       include: {
         cohorts: true,
-        courses: true,
+        courses: { where: { status: 'published' } },
       },
     });
   }
@@ -26,13 +31,19 @@ export class CohortsService {
     });
   }
 
+  // Students only see cohorts they belong to; instructors and admins see all.
+  private cohortScope(user: Actor) {
+    return user.role === 'student' ? { members: { some: { userId: user.id } } } : {};
+  }
+
   // Cohorts
-  async getCohorts() {
+  async getCohorts(user: Actor) {
     return this.prisma.cohort.findMany({
+      where: this.cohortScope(user),
       include: {
         program: true,
-        members: { include: { user: true } },
-        teams: { include: { members: { include: { user: true } } } },
+        members: { include: { user: publicUser } },
+        teams: { include: { members: { include: { user: publicUser } } } },
       },
     });
   }
@@ -50,17 +61,28 @@ export class CohortsService {
   }
 
   // Teams
-  async getTeamsByCohort(cohortId: string) {
+  async getTeamsByCohort(cohortId: string, user: Actor) {
+    const cohort = await this.prisma.cohort.findFirst({
+      where: { id: cohortId, ...this.cohortScope(user) },
+    });
+    if (!cohort) throw new NotFoundException({ error: { code: 'COHORT_NOT_FOUND', message: 'Cohort not found' } });
+
     return this.prisma.team.findMany({
       where: { cohortId },
       include: {
-        members: { include: { user: true } },
+        members: { include: { user: publicUser } },
         tasks: true,
       },
     });
   }
 
-  async createTeam(cohortId: string, data: { name: string; memberUserIds: string[] }) {
+  async createTeam(cohortId: string, data: { name: string; memberUserIds: string[] }, user: Actor) {
+    const cohort = await this.prisma.cohort.findUnique({ where: { id: cohortId } });
+    if (!cohort) throw new NotFoundException({ error: { code: 'COHORT_NOT_FOUND', message: 'Cohort not found' } });
+    if (user.role !== 'admin' && cohort.instructorId !== user.id) {
+      throw new ForbiddenException({ error: { code: 'FORBIDDEN', message: 'You do not instruct this cohort' } });
+    }
+
     const team = await this.prisma.team.create({
       data: {
         name: data.name,
@@ -70,7 +92,7 @@ export class CohortsService {
         },
       },
       include: {
-        members: { include: { user: true } },
+        members: { include: { user: publicUser } },
       },
     });
     return team;

@@ -1,5 +1,5 @@
 // apps/api/src/modules/auth/auth.service.ts
-import { Injectable, BadRequestException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, BadRequestException, UnauthorizedException, NotImplementedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
@@ -12,6 +12,7 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
+  // Public self-registration always creates a student; elevated roles are granted by an admin only.
   async register(data: { name: string; email: string; password?: string; role?: UserRole }) {
     const existing = await this.prisma.user.findUnique({ where: { email: data.email } });
     if (existing) {
@@ -24,7 +25,7 @@ export class AuthService {
         name: data.name,
         email: data.email,
         passwordHash,
-        role: data.role || 'student',
+        role: 'student',
       },
     });
 
@@ -52,7 +53,11 @@ export class AuthService {
   }
 
   async handleGithubOAuth(code: string) {
-    // Simulated GitHub OAuth flow for contract completeness
+    // Simulated GitHub OAuth flow for contract completeness. It signs in a fixed identity
+    // without verifying the code, so it must never be reachable in production.
+    if (process.env.NODE_ENV === 'production') {
+      throw new NotImplementedException({ error: { code: 'GITHUB_OAUTH_UNAVAILABLE', message: 'GitHub OAuth is not configured' } });
+    }
     const mockGithubUser = {
       githubUsername: 'web3developer',
       email: 'dev@github.com',
@@ -74,6 +79,10 @@ export class AuthService {
           role: 'student',
         },
       });
+    }
+
+    if (user.status === 'suspended') {
+      throw new UnauthorizedException({ error: { code: 'ACCOUNT_SUSPENDED', message: 'Account has been suspended' } });
     }
 
     const token = this.generateToken(user.id, user.email, user.role);

@@ -5,7 +5,8 @@ import { ValidationPipe } from '@nestjs/common';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  // rawBody is needed to verify GitHub webhook signatures against the exact bytes received.
+  const app = await NestFactory.create(AppModule, { rawBody: true });
 
   app.enableCors();
   app.setGlobalPrefix('api/v1');

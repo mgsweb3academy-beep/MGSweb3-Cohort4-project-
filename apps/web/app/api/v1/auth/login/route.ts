@@ -20,7 +20,7 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({
-      token: `mock-jwt-${user.id}`,
+      // This endpoint verifies credentials; use /api/auth for a session.
       user: {
         id: user.id,
         name: user.name,

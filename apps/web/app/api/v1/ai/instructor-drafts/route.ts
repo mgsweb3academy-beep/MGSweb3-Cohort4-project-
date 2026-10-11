@@ -1,12 +1,17 @@
+import { guardAI } from '@/lib/ai-access';
 import { NextRequest, NextResponse } from 'next/server';
 import { createInstructorDraft, getInstructorDrafts } from '@/lib/ai-service';
 
 export async function GET(req: NextRequest) {
+  const denied = await guardAI(['instructor', 'admin']);
+  if (denied) return denied;
   const courseId = req.nextUrl.searchParams.get('courseId') ?? 'crs1';
   return NextResponse.json({ drafts: getInstructorDrafts(courseId) });
 }
 
 export async function POST(req: NextRequest) {
+  const denied = await guardAI(['instructor', 'admin']);
+  if (denied) return denied;
   try {
     const body = await req.json();
     const { courseId, type, context } = body as { courseId?: string; type?: 'announcement' | 'rubric' | 'content_suggestion'; context?: string };

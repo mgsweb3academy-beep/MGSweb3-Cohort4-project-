@@ -16,7 +16,7 @@ export function ReviewSection({ task, currentUser }: ReviewSectionProps) {
   const [error, setError] = useState<string | null>(null);
 
   const reviews = task.reviews || [];
-  const approvedCount = reviews.filter((r) => r.status === 'approved').length;
+  const approvedCount = task.approvalIds?.length ?? 0;
 
   const handleSubmit = async (status: 'approved' | 'changes_requested') => {
     if (!comment.trim()) {

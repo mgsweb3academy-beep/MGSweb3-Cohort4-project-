@@ -12,13 +12,13 @@ export class CoursesController {
   constructor(private coursesService: CoursesService) {}
 
   @Get('courses')
-  async getCourses() {
-    return this.coursesService.getCourses();
+  async getCourses(@CurrentUser() user: any) {
+    return this.coursesService.getCourses(user);
   }
 
   @Get('courses/:id')
-  async getCourseById(@Param('id') id: string) {
-    return this.coursesService.getCourseById(id);
+  async getCourseById(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.coursesService.getCourseById(id, user);
   }
 
   @Post('courses')
@@ -29,8 +29,8 @@ export class CoursesController {
 
   @Post('courses/:id/request-review')
   @Roles('instructor')
-  async requestReview(@Param('id') id: string) {
-    return this.coursesService.requestReview(id);
+  async requestReview(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.coursesService.requestReview(id, user);
   }
 
   @Post('courses/:id/approve')
@@ -46,39 +46,46 @@ export class CoursesController {
   }
 
   @Get('lessons/:id')
-  async getLessonById(@Param('id') id: string) {
-    return this.coursesService.getLessonById(id);
+  async getLessonById(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.coursesService.getLessonById(id, user);
   }
 
   @Post('lessons')
   @Roles('instructor', 'admin')
-  async createLesson(@Body() body: { courseId: string; title: string; contentType: any; contentUrl?: string; textContent?: string; order?: number }) {
-    return this.coursesService.createLesson(body);
+  async createLesson(
+    @CurrentUser() user: any,
+    @Body() body: { courseId: string; title: string; contentType: any; contentUrl?: string; textContent?: string; order?: number },
+  ) {
+    return this.coursesService.createLesson(body, user);
   }
 
   @Put('lessons/:id')
   @Roles('instructor', 'admin')
-  async updateLesson(@Param('id') id: string, @Body() body: { title?: string; textContent?: string; contentUrl?: string }) {
-    return this.coursesService.updateLesson(id, body);
+  async updateLesson(
+    @Param('id') id: string,
+    @CurrentUser() user: any,
+    @Body() body: { title?: string; textContent?: string; contentUrl?: string },
+  ) {
+    return this.coursesService.updateLesson(id, body, user);
   }
 
   @Get('lessons/:id/progress')
   async getLessonProgress(@Param('id') lessonId: string, @CurrentUser() user: any) {
-    return this.coursesService.getLessonProgress(lessonId, user.id);
+    return this.coursesService.getLessonProgress(lessonId, user);
   }
 
   @Put('lessons/:id/progress')
   async updateLessonProgress(@Param('id') lessonId: string, @CurrentUser() user: any, @Body() body: { lastPosition?: number; isCompleted?: boolean }) {
-    return this.coursesService.updateLessonProgress(lessonId, user.id, body);
+    return this.coursesService.updateLessonProgress(lessonId, user, body);
   }
 
   @Post('lessons/:id/bookmarks')
   async addBookmark(@Param('id') lessonId: string, @CurrentUser() user: any, @Body() body: { position: number; label: string }) {
-    return this.coursesService.addBookmark(lessonId, user.id, body);
+    return this.coursesService.addBookmark(lessonId, user, body);
   }
 
   @Post('lessons/:id/notes')
   async addNote(@Param('id') lessonId: string, @CurrentUser() user: any, @Body() body: { position: number; content: string }) {
-    return this.coursesService.addNote(lessonId, user.id, body);
+    return this.coursesService.addNote(lessonId, user, body);
   }
 }

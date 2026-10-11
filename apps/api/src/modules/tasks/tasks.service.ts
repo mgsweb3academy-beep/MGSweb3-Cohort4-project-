@@ -1,17 +1,51 @@
 // apps/api/src/modules/tasks/tasks.service.ts
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TaskState } from 'types';
+
+type Actor = { id: string; role: string };
+
+// The API speaks 'In Review'; the Prisma enum can't contain a space, so it stores 'InReview'.
+const toDbState = (state: string) => (state === 'In Review' ? 'InReview' : state);
+const toApiState = (state: string) => (state === 'InReview' ? 'In Review' : state) as TaskState;
 
 @Injectable()
 export class TasksService {
   constructor(private prisma: PrismaService) {}
 
-  async getTasks(query?: { cohortId?: string; teamId?: string; state?: TaskState }) {
-    const where: any = {};
+  private toDto(t: any) {
+    return {
+      id: t.id,
+      title: t.title,
+      teamId: t.teamId,
+      teamName: t.team?.name || '',
+      cohortId: t.cohortId,
+      state: toApiState(t.state),
+      createdAt: t.createdAt.toISOString(),
+      updatedAt: t.updatedAt.toISOString(),
+      closedAt: t.closedAt?.toISOString(),
+    };
+  }
+
+  // Students only see tasks belonging to teams they are a member of.
+  private scopeFor(user: Actor) {
+    return user.role === 'student' ? { team: { members: { some: { userId: user.id } } } } : {};
+  }
+
+  private async assertCanManageCohort(cohortId: string, user: Actor) {
+    if (user.role === 'admin') return;
+    const cohort = await this.prisma.cohort.findUnique({ where: { id: cohortId } });
+    if (!cohort) throw new NotFoundException({ error: { code: 'COHORT_NOT_FOUND', message: 'Cohort not found' } });
+    if (cohort.instructorId !== user.id) {
+      throw new ForbiddenException({ error: { code: 'FORBIDDEN', message: 'You do not instruct this cohort' } });
+    }
+  }
+
+  async getTasks(user: Actor, query?: { cohortId?: string; teamId?: string; state?: TaskState }) {
+    const where: any = { ...this.scopeFor(user) };
     if (query?.cohortId) where.cohortId = query.cohortId;
     if (query?.teamId) where.teamId = query.teamId;
-    if (query?.state) where.state = query.state;
+    if (query?.state) where.state = toDbState(query.state);
 
     const tasks = await this.prisma.task.findMany({
       where,
@@ -19,40 +53,27 @@ export class TasksService {
       orderBy: { createdAt: 'desc' },
     });
 
-    return tasks.map((t) => ({
-      id: t.id,
-      title: t.title,
-      teamId: t.teamId,
-      teamName: t.team?.name || '',
-      cohortId: t.cohortId,
-      state: t.state as TaskState,
-      createdAt: t.createdAt.toISOString(),
-      updatedAt: t.updatedAt.toISOString(),
-      closedAt: t.closedAt?.toISOString(),
-    }));
+    return tasks.map((t) => this.toDto(t));
   }
 
-  async getTaskById(id: string) {
-    const t = await this.prisma.task.findUnique({
-      where: { id },
+  async getTaskById(id: string, user: Actor) {
+    const t = await this.prisma.task.findFirst({
+      where: { id, ...this.scopeFor(user) },
       include: { team: true, cohort: true },
     });
     if (!t) throw new NotFoundException({ error: { code: 'TASK_NOT_FOUND', message: 'Task not found' } });
 
-    return {
-      id: t.id,
-      title: t.title,
-      teamId: t.teamId,
-      teamName: t.team?.name || '',
-      cohortId: t.cohortId,
-      state: t.state as TaskState,
-      createdAt: t.createdAt.toISOString(),
-      updatedAt: t.updatedAt.toISOString(),
-      closedAt: t.closedAt?.toISOString(),
-    };
+    return this.toDto(t);
   }
 
-  async createTask(data: { title: string; teamId: string; cohortId: string }) {
+  async createTask(data: { title: string; teamId: string; cohortId: string }, user: Actor) {
+    await this.assertCanManageCohort(data.cohortId, user);
+
+    const team = await this.prisma.team.findUnique({ where: { id: data.teamId } });
+    if (!team || team.cohortId !== data.cohortId) {
+      throw new BadRequestException({ error: { code: 'TEAM_COHORT_MISMATCH', message: 'Team does not belong to the cohort' } });
+    }
+
     const task = await this.prisma.task.create({
       data: {
         title: data.title,
@@ -63,19 +84,10 @@ export class TasksService {
       include: { team: true, cohort: true },
     });
 
-    return {
-      id: task.id,
-      title: task.title,
-      teamId: task.teamId,
-      teamName: task.team?.name || '',
-      cohortId: task.cohortId,
-      state: task.state as TaskState,
-      createdAt: task.createdAt.toISOString(),
-      updatedAt: task.updatedAt.toISOString(),
-    };
+    return this.toDto(task);
   }
 
-  async updateTaskState(id: string, newState: TaskState) {
+  async updateTaskState(id: string, newState: TaskState, user: Actor) {
     const allowedTransitions: Record<string, string[]> = {
       Assigned: ['Branched'],
       Branched: ['Pushed'],
@@ -84,10 +96,17 @@ export class TasksService {
       Closed: [],
     };
 
-    const task = await this.prisma.task.findUnique({ where: { id } });
+    const task = await this.prisma.task.findFirst({
+      where: { id, ...this.scopeFor(user) },
+    });
     if (!task) throw new NotFoundException({ error: { code: 'TASK_NOT_FOUND', message: 'Task not found' } });
 
-    const currentState = task.state;
+    // Closing a task is the review outcome, so it is reserved for the cohort's instructor or an admin.
+    if (newState === 'Closed') {
+      await this.assertCanManageCohort(task.cohortId, user);
+    }
+
+    const currentState = toApiState(task.state);
     const validNextStates = allowedTransitions[currentState] || [];
 
     if (!validNextStates.includes(newState)) {
@@ -102,22 +121,12 @@ export class TasksService {
     const updated = await this.prisma.task.update({
       where: { id },
       data: {
-        state: newState as any,
+        state: toDbState(newState) as any,
         closedAt: newState === 'Closed' ? new Date() : undefined,
       },
       include: { team: true, cohort: true },
     });
 
-    return {
-      id: updated.id,
-      title: updated.title,
-      teamId: updated.teamId,
-      teamName: updated.team?.name || '',
-      cohortId: updated.cohortId,
-      state: updated.state as TaskState,
-      createdAt: updated.createdAt.toISOString(),
-      updatedAt: updated.updatedAt.toISOString(),
-      closedAt: updated.closedAt?.toISOString(),
-    };
+    return this.toDto(updated);
   }
 }

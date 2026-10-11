@@ -1,0 +1,8 @@
+**/node_modules
+**/dist
+**/.next
+**/.env
+**/.env.*
+.git
+apps/web/**
+!apps/web/package.json

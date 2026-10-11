@@ -62,7 +62,7 @@ export const Nav: React.FC<NavProps> = ({ currentPath }) => {
             notifications={notifications} 
             onMarkAsRead={(id) => setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n))} 
           />
-          {isSignedIn ? (
+          {isSignedIn && session?.user ? (
             <div className="relative">
               <button
                 onClick={() => setShowUserMenu((v) => !v)}

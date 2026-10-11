@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useConvex } from 'convex/react';
+import { useConvex, useConvexAuth } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import {
   MOCK_USERS,
@@ -338,10 +338,12 @@ function Toast({ message, onClose }: { message: string; onClose: () => void }) {
 
 function UserManagement() {
   const convex = useConvex();
+  const { isAuthenticated } = useConvexAuth();
   const [users, setUsers] = useState<User[]>([]);
   useEffect(() => {
+    if (!isAuthenticated) return;
     convex.query(api.users.list, {}).then(data => setUsers(data as User[])).catch(console.error);
-  }, [convex]);
+  }, [convex, isAuthenticated]);
   const [filter, setFilter] = useState('');
   const [roleFilter, setRoleFilter] = useState<UserRole | 'all'>('all');
   const [modal, setModal] = useState<'create' | 'suspend' | 'bulkinvite' | null>(null);
