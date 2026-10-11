@@ -1,3 +1,4 @@
+import { guardAI } from '@/lib/ai-access';
 import { NextResponse } from 'next/server';
 import { MOCK_TASKS, MOCK_AGENT_LOGS, AGENT_CONFIG } from '@/lib/mock-data';
 import type { AgentLog, AgentLogStatus } from '@/lib/types';
@@ -11,12 +12,14 @@ import crypto from 'crypto';
  * 2. Imbalanced contributions (placeholder logic based on task states or mock scores)
  */
 export async function POST() {
+  const denied = await guardAI(['instructor', 'admin']);
+  if (denied) return denied;
   const managerConfig = AGENT_CONFIG.find(c => c.id === 'manager');
   if (!managerConfig || !managerConfig.enabled) {
     return NextResponse.json({ message: 'Manager agent is disabled' }, { status: 400 });
   }
 
-  const logStatus: AgentLogStatus = managerConfig.autonomyLevel === 'autonomous' ? 'applied' : 'proposed';
+  const logStatus: AgentLogStatus = 'proposed';
   const newLogs: AgentLog[] = [];
   const now = new Date();
 

@@ -13,12 +13,7 @@ import { AdminModule } from './modules/admin/admin.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { DiscussionsModule } from './modules/discussions/discussions.module';
 import { HealthModule } from './modules/health/health.module';
-import { LessonsModule } from './lessons/lessons.module';
-import { ProgressModule } from './progress/progress.module';
-import { ProgramsModule } from './programs/programs.module';
 import { AnnouncementsModule } from './announcements/announcements.module';
-import { WebhooksModule } from './webhooks/webhooks.module';
-import { AiModule } from './ai/ai.module';
 
 @Module({
   imports: [
@@ -35,12 +30,7 @@ import { AiModule } from './ai/ai.module';
     NotificationsModule,
     DiscussionsModule,
     HealthModule,
-    LessonsModule,
-    ProgressModule,
-    ProgramsModule,
     AnnouncementsModule,
-    WebhooksModule,
-    AiModule,
   ],
 })
 export class AppModule {}

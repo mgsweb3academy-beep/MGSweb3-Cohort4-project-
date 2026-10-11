@@ -25,13 +25,13 @@ def agent_node(state: ManagerState):
         content=f"Review tasks for cohort {state['cohort_id']}. The action requested is {state['action']}."
     )
 
-    # In a real app, this would query DB state via tools.
+    # The agent has no tools to read or change DB state yet, so it takes no actions;
+    # it only records the model's assessment. Never report actions that did not happen.
     response = llm.invoke([system_msg, user_msg])
 
-    # Mocking actions taken based on response
     return {
         "messages": [response],
-        "actions_taken": [{"type": "warn", "targetId": "user_123", "reason": "Late on submission"}]
+        "actions_taken": []
     }
 
 def build_manager_graph():

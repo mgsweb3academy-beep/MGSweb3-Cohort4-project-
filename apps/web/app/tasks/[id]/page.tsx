@@ -9,7 +9,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import type { Task, TaskState } from '@/lib/types';
 import { TASK_STATES } from '@/lib/types';
-import { MOCK_TASKS } from '@/lib/mock-data';
+import { useSession } from 'next-auth/react';
 import {
   STATE_META,
   formatTimeInState,
@@ -29,13 +29,6 @@ const PIPELINE: { state: TaskState; managed: boolean }[] = [
   { state: 'Closed',     managed: true  },
 ];
 
-// Mock session — Part 2 replaces with useSession()
-type UserRole = 'student' | 'instructor' | 'admin';
-const MOCK_SESSION: { user: { id: string; name: string }; role: UserRole } = {
-  user: { id: 'u8', name: 'Dr. Yemi F.' },
-  role: 'instructor',
-};
-
 export default function TaskDetailPage() {
   const params = useParams<{ id: string }>();
   const [task, setTask]         = useState<Task | null>(null);
@@ -49,7 +42,9 @@ export default function TaskDetailPage() {
   const [transError, setTErr]   = useState<string | null>(null);
   const [transitioning, setTr]  = useState(false);
 
-  const { user, role } = MOCK_SESSION;
+  const { data: session } = useSession();
+  const user = { id: session?.user?.id ?? '', name: session?.user?.name ?? 'Learner' };
+  const role = (session?.user as { role?: string })?.role ?? 'student';
   const isReadOnly = role === 'student';
 
   // ── Fetch task ──
@@ -69,16 +64,7 @@ export default function TaskDetailPage() {
         setDue(data.dueDate ?? '');
       })
       .catch(() => {
-        // Fallback to mock
-        const found = MOCK_TASKS.find((t) => t.id === id);
-        if (found) {
-          setTask(found);
-          setTitle(found.title);
-          setDesc(found.description ?? '');
-          setDue(found.dueDate ?? '');
-        } else {
-          setNotFound(true);
-        }
+        setNotFound(true);
       })
       .finally(() => setLoading(false));
   }, [params?.id]);
@@ -89,7 +75,7 @@ export default function TaskDetailPage() {
     try {
       const res = await fetch(`/api/v1/tasks/${task.id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', 'x-user-role': role },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: editTitle || undefined, description: editDesc || undefined, dueDate: editDue || undefined }),
       });
       if (!res.ok) {
@@ -115,7 +101,7 @@ export default function TaskDetailPage() {
       const res = await fetch(`/api/v1/tasks/${task.id}/transition`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ to, by: user.id, byName: user.name }),
+        body: JSON.stringify({ to }),
       });
       if (!res.ok) {
         const body = await res.json();

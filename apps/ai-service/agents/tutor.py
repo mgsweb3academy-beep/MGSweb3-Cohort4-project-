@@ -1,4 +1,4 @@
-from typing import TypedDict, Annotated, Sequence, Any
+from typing import TypedDict, Annotated, Sequence, Any, Optional
 import operator
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -10,26 +10,30 @@ class TutorState(TypedDict):
     context: str
     messages: Annotated[Sequence[Any], operator.add]
     answer: str
-    confidence: float
+    confidence: Optional[float]
 
 def retrieve_context(state: TutorState):
-    # Mock retrieval logic (RAG)
-    mock_context = f"Context for {state['lesson_id']}: A blockchain is a distributed ledger technology."
-    return {"context": mock_context}
+    # Lesson text is supplied by the API with the request; there is no retrieval store yet.
+    return {"context": state.get("context", "")}
 
 def generate_answer(state: TutorState):
     llm = ChatOpenAI(temperature=0.2)
-    system_msg = SystemMessage(
-        content=f"You are an AI Tutor. Answer based ONLY on context: {state['context']}"
-    )
+    if state["context"]:
+        instructions = f"You are an AI Tutor. Answer based ONLY on this lesson material:\n{state['context']}"
+    else:
+        instructions = (
+            "You are an AI Tutor. No lesson material is available for this question, "
+            "so answer from general knowledge and say that it is not drawn from the lesson."
+        )
+    system_msg = SystemMessage(content=instructions)
     user_msg = HumanMessage(content=state['question'])
 
     response = llm.invoke([system_msg, user_msg])
 
+    # No calibrated confidence signal exists, so none is reported.
     return {
         "messages": [response],
         "answer": response.content,
-        "confidence": 0.95
     }
 
 def build_tutor_graph():

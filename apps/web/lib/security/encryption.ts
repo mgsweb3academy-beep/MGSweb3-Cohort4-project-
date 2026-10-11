@@ -5,12 +5,13 @@
 
 import { webcrypto } from 'crypto';
 
-// Use webcrypto when running in Node.js or browser native Crypto API
-const cryptoApi = (typeof window !== 'undefined' && window.crypto) 
-  ? window.crypto 
-  : webcrypto;
+const cryptoApi: Crypto = (globalThis.crypto ?? webcrypto) as Crypto;
 
-const DEFAULT_SECRET = process.env.ENCRYPTION_SECRET || 'corridor-default-aes256-secret-key-32bytes!';
+function encryptionSecret() {
+  const secret = process.env.ENCRYPTION_SECRET;
+  if (!secret) throw new Error('ENCRYPTION_SECRET is required');
+  return secret;
+}
 
 /**
  * Derives a CryptoKey from a secret passphrase using PBKDF2 with 100,000 iterations.
@@ -28,7 +29,7 @@ async function deriveKey(secret: string, salt: Uint8Array): Promise<CryptoKey> {
   return cryptoApi.subtle.deriveKey(
     {
       name: 'PBKDF2',
-      salt,
+      salt: new Uint8Array(salt).buffer,
       iterations: 100000,
       hash: 'SHA-256',
     },
@@ -44,7 +45,7 @@ async function deriveKey(secret: string, salt: Uint8Array): Promise<CryptoKey> {
  */
 export async function encryptPayload(
   text: string,
-  secretKey: string = DEFAULT_SECRET
+  secretKey: string = encryptionSecret()
 ): Promise<{ ciphertext: string; iv: string; salt: string }> {
   const enc = new TextEncoder();
   const salt = cryptoApi.getRandomValues(new Uint8Array(16));
@@ -69,7 +70,7 @@ export async function encryptPayload(
  */
 export async function decryptPayload(
   encrypted: { ciphertext: string; iv: string; salt: string },
-  secretKey: string = DEFAULT_SECRET
+  secretKey: string = encryptionSecret()
 ): Promise<string> {
   const dec = new TextDecoder();
   const ciphertextBuffer = Buffer.from(encrypted.ciphertext, 'base64');

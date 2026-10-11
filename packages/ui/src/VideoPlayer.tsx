@@ -6,36 +6,17 @@ interface VideoPlayerProps {
   onProgress?: (currentTime: number) => void;
   startPosition?: number;
 }
-
 export const VideoPlayer = ({ url, onProgress, startPosition = 0 }: VideoPlayerProps) => {
-  const playerRef = React.useRef<ReactPlayer>(null);
-  const [hasSetStart, setHasSetStart] = React.useState(false);
-
+  const playerRef = React.useRef<HTMLVideoElement>(null);
+  const startedUrl = React.useRef<string | null>(null);
   const handleReady = () => {
-    if (!hasSetStart && startPosition > 0 && playerRef.current) {
-      playerRef.current.seekTo(startPosition, 'seconds');
-      setHasSetStart(true);
+    if (startedUrl.current !== url && playerRef.current) {
+      playerRef.current.currentTime = startPosition;
+      startedUrl.current = url;
     }
   };
-
-  const handleProgress = (state: { playedSeconds: number }) => {
-    if (onProgress) {
-      onProgress(state.playedSeconds);
-    }
-  };
-
-  return (
-    <div className="w-full aspect-video bg-black rounded-lg overflow-hidden border border-line relative">
-      <ReactPlayer
-        ref={playerRef}
-        url={url}
-        controls
-        width="100%"
-        height="100%"
-        onReady={handleReady}
-        onProgress={handleProgress}
-        progressInterval={1000}
-      />
-    </div>
-  );
+  return <div className="w-full aspect-video bg-black rounded-lg overflow-hidden border border-line relative">
+    <ReactPlayer ref={playerRef} src={url} controls width="100%" height="100%"
+      onReady={handleReady} onTimeUpdate={event => onProgress?.(event.currentTarget.currentTime)} />
+  </div>;
 };

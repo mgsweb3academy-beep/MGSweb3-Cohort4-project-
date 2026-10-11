@@ -1,20 +1,36 @@
-version: '3.8'
-
 services:
   api:
     build:
       context: .
       dockerfile: apps/api/Dockerfile
+    # No migrations exist yet, so sync the schema on boot (dev only; replace with `prisma migrate deploy` once migrations are added).
+    command: sh -c "npx prisma db push --schema prisma/schema.prisma --skip-generate && node dist/main.js"
     ports:
       - "3001:3001"
     environment:
       - DATABASE_URL=postgresql://corridor_user:corridor_pass@postgres:5432/corridor_db?schema=public
       - REDIS_URL=redis://redis:6379
-      - JWT_SECRET=corridor_dev_secret_key_change_in_prod
+      # Required: the API refuses to start in production with the built-in development secret.
+      - JWT_SECRET=${JWT_SECRET:?set JWT_SECRET in your environment or .env}
+      - GITHUB_WEBHOOK_SECRET=${GITHUB_WEBHOOK_SECRET:-}
       - AI_SERVICE_URL=http://ai-service:8000
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      ai-service:
+        condition: service_started
+
+  ai-service:
+    build:
+      context: .
+      dockerfile: apps/ai-service/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      # Without a key the AI endpoints return 503 AI_NOT_CONFIGURED instead of fabricated answers.
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
 
   postgres:
     image: postgres:16-alpine
@@ -26,6 +42,11 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U corridor_user -d corridor_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   redis:
     image: redis:7-alpine

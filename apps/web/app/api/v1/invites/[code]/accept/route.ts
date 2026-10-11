@@ -1,39 +1,6 @@
-import { NextResponse } from 'next/server';
-import { InviteAcceptResponse } from 'types';
-import { acceptInvite, getInviteByCode } from '@/lib/auth-store';
-
-export async function POST(
-  req: Request,
-  { params }: { params: Promise<{ code: string }> }
-) {
-  try {
-    const { code } = await params;
-
-    if (!code) {
-      return NextResponse.json({ error: { code: 'BAD_REQUEST', message: 'Code is required' } }, { status: 400 });
-    }
-
-    const invite = await getInviteByCode(code);
-    if (!invite) {
-      return NextResponse.json({ error: { code: 'INVITE_NOT_FOUND', message: 'Invite not found.' } }, { status: 404 });
-    }
-
-    const body = await req.json().catch(() => ({}));
-    const userId = body?.userId ?? 'student1';
-    const response = await acceptInvite(code, userId);
-
-    if (!response.success) {
-      return NextResponse.json({ error: { code: 'INVITE_REJECTED', message: 'Invite could not be accepted.' } }, { status: 403 });
-    }
-
-    const inviteResponse: InviteAcceptResponse = {
-      success: true,
-      cohortId: response.cohortId,
-      enrollmentId: response.enrollmentId,
-    };
-
-    return NextResponse.json(inviteResponse);
-  } catch (error) {
-    return NextResponse.json({ error: { code: 'INTERNAL_SERVER_ERROR', message: 'Something went wrong' } }, { status: 500 });
-  }
+import { acceptInvite } from '@/lib/auth-store';
+import { apiError } from '@/lib/api-error';
+export async function POST(_req: Request, { params }: { params: Promise<{ code: string }> }) {
+  try { return Response.json(await acceptInvite((await params).code)); }
+  catch (error) { return apiError(error); }
 }

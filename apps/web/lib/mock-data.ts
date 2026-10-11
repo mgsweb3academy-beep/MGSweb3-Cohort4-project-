@@ -5,14 +5,14 @@
 
 import type {
   User, Course, Cohort, Program, Team, RosterMember, AgentConfig, ModerationItem,
-  PlatformAnalytics, InstructorPerformance, AuditLogEntry, Task, AgentLog
+  PlatformAnalytics, InstructorPerformance, AuditLogEntry, Task, AgentLog, RuntimeAgentConfig
 } from './types';
 
 // ============================================================================
 // PART 8: MOCK AGENT CONFIG & LOGS
 // ============================================================================
 
-export const AGENT_CONFIG: AgentConfig[] = [
+export const AGENT_CONFIG: RuntimeAgentConfig[] = [
   {
     id: 'manager',
     name: 'Task Orchestrator',

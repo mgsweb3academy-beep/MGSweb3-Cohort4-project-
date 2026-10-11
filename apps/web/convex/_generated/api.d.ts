@@ -8,6 +8,9 @@
  * @module
  */
 
+import type * as health from "../health.js";
+import type * as tasks from "../tasks.js";
+import type * as onboarding from "../onboarding.js";
 import type * as authNode from "../authNode.js";
 import type * as cohorts from "../cohorts.js";
 import type * as courses from "../courses.js";
@@ -24,6 +27,9 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  health: typeof health;
+  tasks: typeof tasks;
+  onboarding: typeof onboarding;
   authNode: typeof authNode;
   cohorts: typeof cohorts;
   courses: typeof courses;

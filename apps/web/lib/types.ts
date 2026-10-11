@@ -132,6 +132,7 @@ export interface TaskReview {
 }
 
 export interface Task {
+  approvalIds?: string[];
   id: string;
   title: string;
   description?: string;
@@ -321,7 +322,7 @@ export interface InstructorDraft {
 
 export type AgentAutonomyLevel = 'suggest_only' | 'autonomous';
 
-export interface AgentConfig {
+export interface RuntimeAgentConfig {
   id: string; // e.g. 'manager', 'review', 'progress-coach'
   name: string;
   enabled: boolean;

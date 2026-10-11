@@ -8,33 +8,32 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Task, TaskState } from '@/lib/types';
 import { TASK_STATES } from '@/lib/types';
-import { MOCK_TASKS, MOCK_COHORTS, MOCK_TEAMS } from '@/lib/mock-data';
+import { useSession } from 'next-auth/react';
+import { useQuery, useConvexAuth, useConvex } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 import { TaskColumn } from '@/components/tasks/TaskColumn';
 import { CreateTaskModal } from '@/components/tasks/CreateTaskModal';
 import { TaskDetailDrawer } from '@/components/tasks/TaskDetailDrawer';
 import { Nav } from 'ui';
 
-// ─── Mock session (Part 2 will replace with useSession()) ─────────────────────
-type UserRole = 'student' | 'instructor' | 'admin';
-const MOCK_SESSION: { user: { id: string; name: string }; role: UserRole } = {
-  user: { id: 'u8', name: 'Dr. Yemi F.' },
-  role: 'instructor',
-};
-
-const PAGE_LIMIT = 20;
 
 export default function TaskBoardPage() {
-  const [tasks, setTasks]             = useState<Task[]>([...MOCK_TASKS]);
+  const [tasks, setTasks]             = useState<Task[]>([]);
   const [selectedTask, setSelected]   = useState<Task | null>(null);
   const [showCreate, setShowCreate]   = useState(false);
-  const [selectedCohort, setCohort]   = useState(MOCK_COHORTS[0]?.id ?? 'c07');
+  const [selectedCohort, setCohort]   = useState('');
   const [selectedTeam, setTeam]       = useState<string>('all');
   const [loading, setLoading]         = useState(false);
-  const [pageMap, setPageMap]         = useState<Record<string, number>>(
-    Object.fromEntries(TASK_STATES.map((s) => [s, PAGE_LIMIT])),
-  );
 
-  const { user, role } = MOCK_SESSION;
+
+  const { data: session } = useSession();
+  const role = (session?.user as { role?: 'student' | 'instructor' | 'admin' })?.role ?? 'student';
+  const { isAuthenticated } = useConvexAuth();
+  const convex = useConvex();
+  const cohorts = useQuery(api.cohorts.list, isAuthenticated ? {} : 'skip') ?? [];
+  const teams = useQuery(api.cohorts.listTeams, isAuthenticated ? {} : 'skip') ?? [];
+  const [fetchError, setFetchError] = useState('');
+  useEffect(() => { if (!selectedCohort && cohorts.length) setCohort(cohorts[0].id); }, [cohorts, selectedCohort]);
   const isReadOnly = role === 'student';
 
   // ── Fetch tasks on filter change ──
@@ -43,23 +42,45 @@ export default function TaskBoardPage() {
     try {
       const params = new URLSearchParams({ cohortId });
       if (teamId && teamId !== 'all') params.set('teamId', teamId);
-      params.set('limit', '200'); // fetch all for client-side split by state
-      const res = await fetch(`/api/v1/tasks?${params.toString()}`);
-      if (res.ok) {
+      params.set('limit', '100');
+      const allTasks: Task[] = [];
+      let cursor: number | undefined = 0;
+      do {
+        params.set('cursor', String(cursor));
+        const res = await fetch(`/api/v1/tasks?${params.toString()}`);
         const data = await res.json();
-        setTasks(data.tasks ?? []);
-      }
-    } catch {
-      // Fallback to mock
-      setTasks([...MOCK_TASKS]);
+        if (!res.ok) throw new Error(data?.error?.message ?? 'Tasks could not be loaded');
+        allTasks.push(...data.tasks);
+        cursor = data.nextCursor;
+      } while (cursor !== undefined);
+      setTasks(allTasks);
+      setFetchError('');
+    } catch (error) {
+      setTasks([]);
+      setFetchError(error instanceof Error ? error.message : 'Tasks could not be loaded');
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchTasks(selectedCohort, selectedTeam);
-  }, [selectedCohort, selectedTeam, fetchTasks]);
+    if (selectedCohort && session?.user) fetchTasks(selectedCohort, selectedTeam);
+  }, [selectedCohort, selectedTeam, fetchTasks, session?.user?.id]);
+
+  const createTeam = async () => {
+    const name = prompt('Team name:');
+    if (!name?.trim()) return;
+    try { await convex.mutation(api.cohorts.createTeam, { name, cohortId: selectedCohort as import('@/convex/_generated/dataModel').Id<'cohorts'> }); }
+    catch (error) { setFetchError(error instanceof Error ? error.message : 'Team could not be created'); }
+  };
+  const createInvite = async () => {
+    const email = prompt('Learner email (leave blank for a shared invitation):');
+    if (email === null) return;
+    try {
+      const { code } = await convex.action(api.authNode.createInvite, { cohortId: selectedCohort as import('@/convex/_generated/dataModel').Id<'cohorts'>, email: email.trim() || undefined, teamId: selectedTeam !== 'all' ? selectedTeam as import('@/convex/_generated/dataModel').Id<'teams'> : undefined });
+      prompt('Copy this invitation link. The selected team will be assigned when accepted:', `${window.location.origin}/invite/${code}`);
+    } catch (error) { setFetchError(error instanceof Error ? error.message : 'Invite could not be created'); }
+  };
 
   // ── Group tasks by state for board columns ──
   const tasksByState = useMemo(() => {
@@ -82,8 +103,8 @@ export default function TaskBoardPage() {
     setSelected(updated);
   };
 
-  const cohort = MOCK_COHORTS.find((c) => c.id === selectedCohort);
-  const teamsInCohort = MOCK_TEAMS.filter((t) => t.cohortId === selectedCohort);
+  const cohort = cohorts.find((c) => c.id === selectedCohort);
+  const teamsInCohort = teams.filter((t) => t.cohortId === selectedCohort);
 
   // Current-week calculation matches cohort-utils pattern
   const weekLabel = cohort
@@ -127,8 +148,9 @@ export default function TaskBoardPage() {
               )}
             </div>
 
+            {!isReadOnly && selectedCohort && <><button type="button" className="btn" onClick={createTeam}>+ Team</button><button type="button" className="btn" onClick={createInvite}>Invite learner</button></>}
             {/* New task CTA — instructor/admin only */}
-            {!isReadOnly && (
+            {!isReadOnly && selectedCohort && (
               <button
                 id="new-task-btn"
                 type="button"
@@ -150,7 +172,7 @@ export default function TaskBoardPage() {
               aria-label="Select cohort"
               className="bg-ink-3 border border-line rounded-[10px] px-[.7rem] py-[.4rem] text-[.82rem] text-chalk font-mono tracking-[.04em] focus:outline-none focus:border-signal transition-colors"
             >
-              {MOCK_COHORTS.map((c) => (
+              {cohorts.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
@@ -178,6 +200,7 @@ export default function TaskBoardPage() {
           </div>
         </div>
 
+        {fetchError && <p role="alert" className="wrap text-mark py-4">{fetchError}</p>}
         {/* ── Kanban board ── */}
         {/* Five columns — one per TaskState.
             Responsive: scrollable row on mobile, grid on ≥900px. */}
@@ -239,6 +262,7 @@ export default function TaskBoardPage() {
       {showCreate && (
         <CreateTaskModal
           cohortId={selectedCohort}
+          teams={teams}
           onCreated={handleTaskCreated}
           onClose={() => setShowCreate(false)}
         />

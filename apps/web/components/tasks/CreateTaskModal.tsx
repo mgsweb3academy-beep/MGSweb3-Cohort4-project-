@@ -6,15 +6,16 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import type { Task, TaskPriority } from '@/lib/types';
-import { MOCK_TEAMS } from '@/lib/mock-data';
+
 
 type Props = {
   cohortId: string;
+  teams: { id: string; name: string; cohortId: string }[];
   onCreated: (task: Task) => void;
   onClose: () => void;
 };
 
-export function CreateTaskModal({ cohortId, onCreated, onClose }: Props) {
+export function CreateTaskModal({ cohortId, teams, onCreated, onClose }: Props) {
   const [title, setTitle]         = useState('');
   const [description, setDesc]    = useState('');
   const [teamId, setTeamId]       = useState('');
@@ -34,7 +35,7 @@ export function CreateTaskModal({ cohortId, onCreated, onClose }: Props) {
     return () => document.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  const teamsInCohort = MOCK_TEAMS.filter((t) => t.cohortId === cohortId);
+  const teamsInCohort = teams.filter((t) => t.cohortId === cohortId);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,7 +48,7 @@ export function CreateTaskModal({ cohortId, onCreated, onClose }: Props) {
     try {
       const res = await fetch('/api/v1/tasks', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-user-role': 'instructor' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: title.trim(),
           description: description.trim() || undefined,

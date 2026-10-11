@@ -1,10 +1,26 @@
 // apps/api/src/modules/admin/admin.service.ts
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class AdminService {
   constructor(private prisma: PrismaService) {}
+
+  // Excludes passwordHash from user rows returned to the client.
+  private readonly publicUserSelect = {
+    id: true,
+    name: true,
+    email: true,
+    role: true,
+    status: true,
+    githubUsername: true,
+    avatarUrl: true,
+    walletAddress: true,
+    joinedAt: true,
+    suspendedAt: true,
+    suspendedBy: true,
+    suspensionReason: true,
+  } as const;
 
   // User Management
   async getUsers() {
@@ -32,8 +48,13 @@ export class AdminService {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) throw new NotFoundException({ error: { code: 'USER_NOT_FOUND', message: 'User not found' } });
 
+    if (id === adminId) {
+      throw new BadRequestException({ error: { code: 'CANNOT_SUSPEND_SELF', message: 'You cannot suspend your own account' } });
+    }
+
     const updated = await this.prisma.user.update({
       where: { id },
+      select: this.publicUserSelect,
       data: {
         status: 'suspended',
         suspendedAt: new Date(),
@@ -62,6 +83,7 @@ export class AdminService {
 
     const updated = await this.prisma.user.update({
       where: { id },
+      select: this.publicUserSelect,
       data: {
         status: 'active',
         suspendedAt: null,

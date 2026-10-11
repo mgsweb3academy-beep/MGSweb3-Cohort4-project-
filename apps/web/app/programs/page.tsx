@@ -81,9 +81,9 @@ export default function ProgramsPage() {
 
           <div className="flex gap-3">
             <Link href="/cohorts">
-              <Button variant="secondary">View Cohorts</Button>
+              <Button variant="outline">View Cohorts</Button>
             </Link>
-            <Button variant="primary" onClick={handleOpenCreate}>
+            <Button variant="solid" onClick={handleOpenCreate}>
               + Create Program
             </Button>
           </div>
@@ -130,11 +130,11 @@ export default function ProgramsPage() {
                   </div>
 
                   <div className="flex gap-3 justify-end">
-                    <Button variant="secondary" onClick={() => handleOpenEdit(prog)}>
+                    <Button variant="outline" onClick={() => handleOpenEdit(prog)}>
                       Edit Shell
                     </Button>
                     <Link href={`/cohorts?programId=${prog.id}&schedule=true`}>
-                      <Button variant="primary">
+                      <Button variant="solid">
                         Schedule Cohort
                       </Button>
                     </Link>
@@ -208,7 +208,7 @@ export default function ProgramsPage() {
               <div className="flex gap-3 justify-end pt-4 border-t border-[var(--line)]">
                 <Button
                   type="button"
-                  variant="secondary"
+                  variant="outline"
                   onClick={() => {
                     setIsCreateOpen(false);
                     setEditingProgram(null);
@@ -216,7 +216,7 @@ export default function ProgramsPage() {
                 >
                   Cancel
                 </Button>
-                <Button type="submit" variant="primary">
+                <Button type="submit" variant="solid">
                   {editingProgram ? 'Save Changes' : 'Create Program'}
                 </Button>
               </div>

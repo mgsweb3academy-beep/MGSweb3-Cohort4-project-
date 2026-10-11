@@ -1,63 +1,22 @@
-import { NextResponse } from 'next/server';
-import { PRESET_CACHE_POLICIES } from '@/lib/performance/cache';
-
-/**
- * Corridor LMS — Health Check API Endpoint
- * Delivers Liveness and Readiness probes to guarantee 99% availability (§6 Availability).
- */
+import { ConvexHttpClient } from 'convex/browser';
+import { api } from '@/convex/_generated/api';
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const probe = searchParams.get('probe') || 'liveness';
-
-  const startTime = Date.now();
-  const uptimeSeconds = process.uptime();
-
-  // Basic Liveness Check (is system alive?)
-  if (probe === 'liveness') {
-    return NextResponse.json(
-      {
-        status: 'UP',
-        probe: 'liveness',
-        timestamp: new Date().toISOString(),
-        uptime: `${Math.floor(uptimeSeconds)}s`,
-      },
-      {
-        status: 200,
-        headers: PRESET_CACHE_POLICIES.NO_STORE,
-      }
-    );
-  }
-
-  // Deep Readiness Check (are all dependent subsystems ready?)
-  const memoryUsage = process.memoryUsage();
-  
-  // Simulated component status checks (DB, Redis, AI gateway)
-  const subsystems = {
-    database: { status: 'HEALTHY', latencyMs: 4 },
-    redis: { status: 'HEALTHY', latencyMs: 2 },
-    aiGateway: { status: 'HEALTHY', latencyMs: 12 },
-  };
-
-  const isReady = Object.values(subsystems).every((sub) => sub.status === 'HEALTHY');
-  const responseTimeMs = Date.now() - startTime;
-
-  return NextResponse.json(
-    {
-      status: isReady ? 'READY' : 'DEGRADED',
-      probe: 'readiness',
-      timestamp: new Date().toISOString(),
-      latencyMs: responseTimeMs,
-      subsystems,
-      systemMetrics: {
-        memoryHeapUsedMB: Math.round(memoryUsage.heapUsed / 1024 / 1024),
-        memoryHeapTotalMB: Math.round(memoryUsage.heapTotal / 1024 / 1024),
-        uptimeSeconds: Math.floor(uptimeSeconds),
-      },
-    },
-    {
-      status: isReady ? 200 : 503,
-      headers: PRESET_CACHE_POLICIES.NO_STORE,
+  const probe = new URL(request.url).searchParams.get('probe') ?? 'liveness';
+  const headers = { 'Cache-Control': 'no-store' };
+  if (probe === 'liveness') return Response.json({ status: 'UP', probe, timestamp: new Date().toISOString() }, { headers });
+  if (probe !== 'readiness') return Response.json({ error: 'Unknown probe' }, { status: 400, headers });
+  const url = process.env.NEXT_PUBLIC_CONVEX_URL;
+  const authConfigured = !!(process.env.AUTH_SECRET && process.env.AUTH_URL && process.env.CONVEX_AUTH_PRIVATE_KEY);
+  let database = false;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    if (url) {
+      const client = new ConvexHttpClient(url);
+      await Promise.race([client.query(api.health.check, {}), new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('Timeout')), 3000); })]);
+      database = true;
     }
-  );
+  } catch { database = false; } finally { clearTimeout(timer); }
+  const ready = database && authConfigured;
+  return Response.json({ status: ready ? 'READY' : 'DEGRADED', probe, subsystems: { database: database ? 'UP' : 'DOWN', authentication: authConfigured ? 'CONFIGURED' : 'NOT_CONFIGURED' }, timestamp: new Date().toISOString() }, { status: ready ? 200 : 503, headers });
 }

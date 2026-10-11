@@ -1,14 +1,26 @@
 import { Course } from 'types';
 import { Card, Badge, Button, Nav } from 'ui';
 import Link from 'next/link';
-import { fetchQuery } from 'convex/nextjs';
+import { redirect } from 'next/navigation';
 import { api } from '@/convex/_generated/api';
+import { auth } from '@/auth';
+import { authenticatedConvex } from '@/lib/convex-server';
 import DeleteCourseButton from './DeleteCourseButton';
 
 export const dynamic = 'force-dynamic';
 
 export default async function CoursesPage() {
-  const courses = (await fetchQuery(api.courses.list, {})) as Course[];
+  const session = await auth();
+  if (!session?.user) redirect('/login?callbackUrl=/courses');
+  const isStaff = ['admin', 'instructor'].includes((session.user as { role?: string }).role ?? '');
+
+  let courses: Course[];
+  try {
+    // Scoped server-side: students get published courses, instructors their own plus published.
+    courses = (await (await authenticatedConvex()).query(api.courses.list, {})) as Course[];
+  } catch {
+    redirect('/login?callbackUrl=/courses');
+  }
 
   return (
     <>
@@ -18,10 +30,14 @@ export default async function CoursesPage() {
           <span className="pill pill-dim mb-2">CURRICULUM</span>
           <div className="flex flex-wrap items-center gap-6">
             <h1 className="text-4xl font-display font-bold">Programs & Courses</h1>
-            <Link href="/courses/new">
-              <Button variant="solid">Create Course</Button>
-            </Link>
-            <DeleteCourseButton courses={courses} />
+            {isStaff && (
+              <>
+                <Link href="/courses/new">
+                  <Button variant="solid">Create Course</Button>
+                </Link>
+                <DeleteCourseButton courses={courses} />
+              </>
+            )}
           </div>
         </div>
 

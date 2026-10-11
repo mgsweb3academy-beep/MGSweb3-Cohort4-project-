@@ -6,14 +6,16 @@ import { PrismaService } from '../../prisma/prisma.service';
 export class ContributionsService {
   constructor(private prisma: PrismaService) {}
 
-  async getContributions(cohortId?: string, learnerId?: string) {
+  async getContributions(user: { id: string; role: string }, cohortId?: string, learnerId?: string) {
     const where: any = {};
     if (cohortId) where.cohortId = cohortId;
-    if (learnerId) where.learnerId = learnerId;
+    // Students can only read their own contribution records, whatever learnerId they pass.
+    if (user.role === 'student') where.learnerId = user.id;
+    else if (learnerId) where.learnerId = learnerId;
 
     const list = await this.prisma.contribution.findMany({
       where,
-      include: { user: true },
+      include: { user: { select: { name: true } } },
     });
 
     return list.map((c) => ({

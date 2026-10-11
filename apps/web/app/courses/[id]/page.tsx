@@ -2,15 +2,30 @@ import { Course, Lesson } from 'types';
 import { Card, Badge, Button, Nav } from 'ui';
 import Link from 'next/link';
 import { revalidatePath } from 'next/cache';
-import { fetchMutation, fetchQuery } from 'convex/nextjs';
+import { redirect } from 'next/navigation';
+import { auth } from '@/auth';
+import { authenticatedConvex } from '@/lib/convex-server';
 import { api } from '@/convex/_generated/api';
 
 export const dynamic = 'force-dynamic';
 
 export default async function CourseDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const course = (await fetchQuery(api.courses.get, { id })) as Course | null;
-  const lessons = (await fetchQuery(api.lessons.listByCourse, { courseId: id })) as Lesson[];
+  const session = await auth();
+  if (!session?.user) redirect(`/login?callbackUrl=/courses/${encodeURIComponent(id)}`);
+  const viewer = session.user as { id?: string; role?: string };
+
+  let course: Course | null;
+  let lessons: Lesson[];
+  try {
+    const client = await authenticatedConvex();
+    course = (await client.query(api.courses.get, { id })) as Course | null;
+    lessons = course ? ((await client.query(api.lessons.listByCourse, { courseId: id })) as Lesson[]) : [];
+  } catch {
+    redirect(`/login?callbackUrl=/courses/${encodeURIComponent(id)}`);
+  }
+  // Only the owning instructor (or an admin) is offered authoring controls; Convex enforces the same rule.
+  const canAuthor = viewer.role === 'admin' || (viewer.role === 'instructor' && course?.instructorId === viewer.id);
 
   if (!course) {
     return (
@@ -38,14 +53,14 @@ export default async function CourseDetailPage({ params }: { params: Promise<{ i
             <p className="text-dim">{course.programName} • {course.instructorName}</p>
           </div>
 
-          {course.status === 'draft' && (
+          {canAuthor && (course.status === 'draft' || course.status === 'rejected') && (
             <div className="flex gap-4">
               <Link href={`/courses/${id}/edit`}>
                 <Button variant="outline">Author Mode</Button>
               </Link>
               <form action={async () => {
                 'use server';
-                await fetchMutation(api.courses.setStatus, { id, status: 'in_review' });
+                await (await authenticatedConvex()).mutation(api.courses.setStatus, { id, status: 'in_review' });
                 revalidatePath(`/courses/${id}`);
               }}>
                 <Button type="submit" variant="solid">Request Review</Button>

@@ -58,7 +58,7 @@ export const AIPromptSchema = z.object({
     'instructor_assistant',
     'admin',
   ]),
-  context: z.record(z.unknown()).optional(),
+  context: z.record(z.string(), z.unknown()).optional(),
 });
 
 /**
@@ -72,7 +72,7 @@ export function validatePayload<T>(
   if (result.success) {
     return { success: true, data: result.data };
   }
-  const issues = result.error?.issues || result.error?.errors || [];
+  const issues = result.error.issues;
   const errors = issues.map((e: any) => `${e.path?.join('.') || 'field'}: ${e.message}`);
   return { success: false, errors };
 }
